@@ -168,6 +168,70 @@ pre.report{white-space:pre-wrap;word-wrap:break-word;font:11.5px/1.55 ui-monospa
   .dept-body{display:block!important}
   .dept{break-inside:avoid;box-shadow:none}
 }
+
+/* ---------- shift tabs ---------- */
+.tabbar{display:flex;gap:5px;padding:0 0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.stab{
+  flex:1 1 0;min-width:0;border:1.5px solid var(--line);background:var(--card);border-radius:11px;
+  padding:9px 6px;font-size:13px;font-weight:700;color:var(--ink-2);min-height:42px;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;
+}
+@media(min-width:420px){ .stab{padding:9px 12px;font-size:13.5px} }
+.stab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.stab .tdot{width:7px;height:7px;border-radius:99px;background:var(--amber);flex-shrink:0}
+.stab .tmark{font-size:12px;color:var(--green);font-weight:800}
+.stab.on .tmark{color:#8fd3ae}
+
+/* ---------- per-shift name bar ---------- */
+.namebar{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:13px 15px;margin-top:16px;box-shadow:var(--shadow);
+}
+.namebar label{display:block;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+.namebar input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;min-height:var(--tap)}
+.namebar input:focus{outline:2px solid var(--green);outline-offset:-1px;border-color:transparent}
+.sentmark{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:700;color:var(--green)}
+
+/* ---------- end-of-list actions ---------- */
+.endcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:22px 0 10px;box-shadow:var(--shadow)}
+.endcard h3{margin:0 0 6px;font-size:18px;letter-spacing:-.015em}
+.endcard p{margin:0 0 14px;font-size:14.5px;color:var(--ink-2);line-height:1.5}
+.endcard .primary{margin-bottom:9px}
+.endcard .hint{margin-top:2px}
+.primary.danger,.sheet-foot button.danger{color:var(--red);border-color:#e3c4c1}
+.sheet-foot button.go.danger{background:var(--red);border-color:var(--red);color:#fff}
+
+.bigcheck{width:64px;height:64px;border-radius:99px;background:var(--green-soft);color:var(--green);
+  font-size:30px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.d-none{background:#d8d5cd}
+.repeat{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:14.5px}
+.repeat:first-of-type{border-top:0}
+.repeat .dot{width:9px;height:9px;border-radius:99px;margin-top:7px;flex-shrink:0;display:inline-block}
+.d-good{background:var(--green)} .d-warn{background:var(--amber)} .d-bad{background:var(--red)}
+
+/* ---------- last 3 days ---------- */
+.recenthead{display:flex;align-items:center;gap:12px;padding:16px 0 12px}
+.recenthead b{font-size:16px;letter-spacing:-.01em}
+.recenthead span{font-size:13px;color:var(--ink-2)}
+.loading{color:var(--ink-3);font-size:15px;text-align:center;padding:34px 0}
+.rshift{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;margin-bottom:10px;box-shadow:var(--shadow)}
+.rshift-head{display:flex;align-items:baseline;gap:9px;margin-bottom:10px}
+.rshift-head b{font-size:15px}
+.rshift-head span{font-size:13px;color:var(--ink-3)}
+.rent{border-left:3px solid var(--line);padding:2px 0 2px 11px;margin-bottom:11px}
+.rent:last-child{margin-bottom:0}
+.rent-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px}
+.rent .tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px}
+.rdept{font-size:13px;font-weight:700}
+.rroute{font-size:11px;font-weight:700;color:var(--ink-3);border:1px solid var(--line);border-radius:999px;padding:2px 7px}
+.rent p{margin:0;font-size:14.5px;line-height:1.45;white-space:pre-wrap}
+.rnone{margin:0;font-size:13.5px;color:var(--ink-3)}
+.t-Issue{border-left-color:var(--red)} .t-Issue .tag{background:var(--red-soft);color:var(--red)}
+.t-Concern{border-left-color:var(--amber)} .t-Concern .tag{background:var(--amber-soft);color:var(--amber)}
+.t-Product{border-left-color:var(--clay)} .t-Product .tag{background:var(--clay-soft);color:var(--clay)}
+.t-Staffing{border-left-color:var(--plum)} .t-Staffing .tag{background:var(--plum-soft);color:var(--plum)}
+.t-Win{border-left-color:var(--green)} .t-Win .tag{background:var(--green-soft);color:var(--green)}
 </style>
 </head>
 <body>
@@ -181,11 +245,12 @@ pre.report{white-space:pre-wrap;word-wrap:break-word;font:11.5px/1.55 ui-monospa
         <button class="chip" id="menubtn" aria-label="Menu">•••</button>
       </div>
     </div>
-    <div class="progress-wrap">
+    <div class="progress-wrap" id="progress">
       <span class="queue hidden" id="queuechip"></span>
       <div class="bar-label"><span id="pctnum"></span><span id="pctright"></span></div>
       <div class="bar"><i id="barfill"></i></div>
     </div>
+    <div class="tabbar" id="tabs"></div>
   </div>
 </header>
 
@@ -329,7 +394,7 @@ const DATA = [
 },
 ];</script>
 <script>/* =========================================================
-   SETUP — two things to fill in, then you're done.
+   SETUP — fill these in before you upload the file.
 
    1. endpoint : the Google Apps Script web app address,
                  the one that ends in /exec.
@@ -338,10 +403,7 @@ const DATA = [
                  each store's link, e.g.  ?store=alameda
 
    Give each store its own link:
-       https://you.github.io/manager-log/?store=alameda
-       https://you.github.io/manager-log/?store=zaragoza
-   Managers then never have to pick a store, and there is
-   no way to log against the wrong one.
+       https://you.github.io/Manager-Checklist/?store=alameda
    ========================================================= */
 const CONFIG = {
   endpoint: "https://script.google.com/macros/s/AKfycbwijs3yoqt7cRnzqGC2024sDKDUpOHhAQAph9A5bjY-Vsq9KUvOKPmYNA2W7lPvor-v/exec",
@@ -357,8 +419,10 @@ const CONFIG = {
 };
 
 /* ================= constants ================= */
-const KEY="mgr-v3", HKEY="mgr-history-v3", OKEY="mgr-outbox-v3", CKEY="mgr-config-v3", SKEY="mgr-store-v3";
+const KEY="mgr-v4", HKEY="mgr-history-v4", OKEY="mgr-outbox-v4", CKEY="mgr-config-v4",
+      SKEY="mgr-store-v4", CODEKEY="mgr-code-v4";
 const RETAIN_DAYS = 15;
+const LOOKBACK_DAYS = 3;
 const ROUTES = ["Higher Management","HR","Commissary","Maintenance"];
 const TYPES = {
   issue:   {label:"Issue",           short:"Issue",    routed:true,  hint:"What's wrong, how bad, and what you need."},
@@ -369,10 +433,11 @@ const TYPES = {
 };
 const TYPE_ORDER = ["issue","concern","product","staffing","win"];
 const STATUS = {
-  good:{label:"All good",           short:"All good"},
-  attn:{label:"Needs attention",    short:"Attention"},
-  skip:{label:"Didn't get to it",   short:"Not covered"}
+  good:{label:"All good",        short:"All good"},
+  attn:{label:"Needs attention", short:"Attention"},
+  skip:{label:"Didn't get to it",short:"Not covered"}
 };
+const RECENT = "recent";
 
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
@@ -380,46 +445,43 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 
 function todayKey(d){d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function prettyDate(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});}
-function shortDate(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});}
+function shortDate(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});}
 function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/864e5);}
+const SHIFT_IDS = DATA.map(s=>s.id);
 
-/* ================= config ================= */
+/* ================= config, store, code ================= */
 let CFG = Object.assign({}, CONFIG);
-try{
-  const c=JSON.parse(localStorage.getItem(CKEY)||"null");
-  if(c && c.endpoint) CFG.endpoint=c.endpoint;   // only the link is remembered per device
-}catch(e){}
+try{ const c=JSON.parse(localStorage.getItem(CKEY)||"null"); if(c && c.endpoint) CFG.endpoint=c.endpoint; }catch(e){}
 function saveCfg(){ try{ localStorage.setItem(CKEY, JSON.stringify({endpoint:CFG.endpoint})); }catch(e){} }
 
-/* ---- which store is this? URL first, then whatever this device chose before ---- */
+let CODE = "";
+try{ CODE = localStorage.getItem(CODEKEY) || ""; }catch(e){}
+function setCode(c){ CODE=(c||"").trim(); try{ CODE? localStorage.setItem(CODEKEY,CODE) : localStorage.removeItem(CODEKEY); }catch(e){} }
+
 let STORE = null;
-function stores(){ return (CFG.stores||[]).filter(function(s){return s && s.id && s.name}); }
+function stores(){ return (CFG.stores||[]).filter(s=>s && s.id && s.name); }
 function storeFromUrl(){
   try{
-    var q=new URLSearchParams(location.search).get("store");
+    const q=new URLSearchParams(location.search).get("store");
     if(!q) return null;
-    var k=q.trim().toLowerCase();
-    return stores().find(function(s){ return s.id.toLowerCase()===k || s.name.toLowerCase()===k; }) || null;
+    const k=q.trim().toLowerCase();
+    return stores().find(s=> s.id.toLowerCase()===k || s.name.toLowerCase()===k) || null;
   }catch(e){ return null; }
 }
-function setStore(st){
-  STORE=st;
-  try{ st ? localStorage.setItem(SKEY, JSON.stringify(st)) : localStorage.removeItem(SKEY); }catch(e){}
-}
+function setStore(st){ STORE=st; try{ st? localStorage.setItem(SKEY,JSON.stringify(st)) : localStorage.removeItem(SKEY); }catch(e){} }
 function resolveStore(){
-  var u=storeFromUrl();
+  const u=storeFromUrl();
   if(u){ setStore(u); return; }
-  // the link named a store we don't recognise (typo?) — ask, never silently reuse the last one
-  var raw=null; try{ raw=new URLSearchParams(location.search).get("store"); }catch(e){}
-  if(raw && raw.trim()){ STORE=null; return; }
-  var saved=null; try{ saved=JSON.parse(localStorage.getItem(SKEY)||"null"); }catch(e){}
-  if(saved && stores().some(function(s){return s.id===saved.id})){ STORE=saved; return; }
+  let raw=null; try{ raw=new URLSearchParams(location.search).get("store"); }catch(e){}
+  if(raw && raw.trim()){ STORE=null; return; }        // link named a store we don't know — ask, don't guess
+  let saved=null; try{ saved=JSON.parse(localStorage.getItem(SKEY)||"null"); }catch(e){}
+  if(saved && stores().some(s=>s.id===saved.id)){ STORE=saved; return; }
   if(stores().length===1){ setStore(stores()[0]); return; }
   STORE=null;
 }
 resolveStore();
 
-/* ================= wrap-up section ================= */
+/* ================= wrap-up department ================= */
 const WRAPUP = {
   name:"Shift wrap-up", wrap:true,
   guide:[
@@ -433,109 +495,102 @@ const WRAPUP = {
 DATA.forEach(sh=> sh.blocks.push({ time:"End of shift", depts:[WRAPUP] }));
 
 /* ================= state ================= */
+function defaultShift(){
+  const h=new Date().getHours();
+  return h<13 ? "opening" : (h<15 ? "second" : "closing");
+}
 function blank(){
-  return { v:3, date:todayKey(), shift:null, manager:"", store:STORE?STORE.name:"", storeId:STORE?STORE.id:"",
+  return { v:4, date:todayKey(), store:STORE?STORE.name:"", storeId:STORE?STORE.id:"",
            day:{order:false,delivery:false,tue:new Date().getDay()===2},
-           depts:{}, seq:1, submittedAt:null, open:{} };
+           shift:defaultShift(), managers:{}, sent:{}, depts:{}, seq:1, open:{}, started:false };
 }
 let S = blank();
 
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 function readHistory(){ try{ return JSON.parse(localStorage.getItem(HKEY)||"[]"); }catch(e){ return []; } }
 function writeHistory(h){ try{ localStorage.setItem(HKEY, JSON.stringify(h)); }catch(e){} }
-
 function pruneHistory(){
   const t=todayKey();
-  const h = readHistory().filter(e=> daysBetween(e.date,t) < RETAIN_DAYS);
-  writeHistory(h);
-  return h;
+  const h=readHistory().filter(e=> daysBetween(e.date,t) < RETAIN_DAYS);
+  writeHistory(h); return h;
 }
-
-function archive(old){
-  if(!old||!old.shift) return;
-  if(!Object.keys(old.depts||{}).length) return;
-  const h = readHistory().filter(e=> !(e.date===old.date && e.shift===old.shift));
-  h.unshift({ date:old.date, shift:old.shift, manager:old.manager, submittedAt:old.submittedAt||null, report:buildReport(old) });
-  writeHistory(h);
-  pruneHistory();
+function archiveAll(st){
+  if(!st) return;
+  let h=readHistory();
+  SHIFT_IDS.forEach(sid=>{
+    if(!hasContent(st,sid)) return;
+    h = h.filter(e=> !(e.date===st.date && e.shiftId===sid));
+    h.unshift({ date:st.date, shiftId:sid, shift:(shiftDef(sid)||{}).name||sid,
+                manager:(st.managers||{})[sid]||"", report:buildReport(st,sid) });
+  });
+  writeHistory(h); pruneHistory();
 }
-
 function load(){
   let saved=null;
-  try{ saved = JSON.parse(localStorage.getItem(KEY)||"null"); }catch(e){}
+  try{ saved=JSON.parse(localStorage.getItem(KEY)||"null"); }catch(e){}
   pruneHistory();
-  if(!saved || saved.v!==3) return;
-  if(saved.date !== todayKey()){
-    archive(saved);
-    const m=saved.manager; S=blank(); S.manager=m; save(); return;
-  }
-  S = saved;
-  if(!S.open) S.open={};
-  if(STORE && S.storeId && S.storeId!==STORE.id){   // link points at a different store than this saved day
-    archive(S); const m=S.manager; S=blank(); S.manager=m; save(); return;
-  }
+  if(!saved || saved.v!==4) return;
+  if(saved.date !== todayKey()){ archiveAll(saved); S=blank(); save(); return; }
+  S=saved;
+  S.open=S.open||{}; S.managers=S.managers||{}; S.sent=S.sent||{};
+  if(STORE && S.storeId && S.storeId!==STORE.id){ archiveAll(S); S=blank(); save(); return; }
   if(STORE){ S.store=STORE.name; S.storeId=STORE.id; }
+  if(SHIFT_IDS.indexOf(S.shift)<0 && S.shift!==RECENT) S.shift=defaultShift();
 }
 
 /* ================= content helpers ================= */
 function shiftDef(id){ return DATA.find(s=>s.id===id); }
 function tagOK(tag, st){ st=st||S; return !tag || !!st.day[tag]; }
-function deptList(st){
-  st=st||S;
-  const def=shiftDef(st.shift); const out=[];
+function deptList(st,sid){
+  st=st||S; sid=sid||st.shift;
+  const def=shiftDef(sid), out=[];
   if(!def) return out;
-  def.blocks.forEach((b,bi)=> b.depts.forEach((d,di)=> out.push({d, id:st.shift+"."+bi+"."+di, block:b.time, bi, di})));
+  def.blocks.forEach((b,bi)=> b.depts.forEach((d,di)=> out.push({d, id:sid+"."+bi+"."+di, block:b.time, bi, di})));
   return out;
 }
-function drec(id){ return S.depts[id] || (S.depts[id] = {s:null, e:[]}); }
+function drec(id){ return S.depts[id] || (S.depts[id]={s:null,e:[]}); }
 
-function counts(st){
-  st=st||S;
-  let total=0, good=0, attn=0, skip=0, entries=0, issues=0;
-  deptList(st).forEach(({d,id})=>{
+function counts(st,sid){
+  st=st||S; sid=sid||st.shift;
+  let total=0,good=0,attn=0,skip=0,entries=0,issues=0;
+  deptList(st,sid).forEach(({id})=>{
     total++;
     const r=(st.depts||{})[id]||{};
-    if(r.s==="good") good++; else if(r.s==="attn") attn++; else if(r.s==="skip") skip++;
+    if(r.s==="good")good++; else if(r.s==="attn")attn++; else if(r.s==="skip")skip++;
     (r.e||[]).forEach(en=>{ if((en.x||"").trim()){ entries++; if(en.t==="issue") issues++; } });
   });
-  const reported = good+attn+skip;
-  return {total, good, attn, skip, entries, issues, reported, pct: total?Math.round(reported/total*100):0};
+  const reported=good+attn+skip;
+  return {total,good,attn,skip,entries,issues,reported,pct: total?Math.round(reported/total*100):0};
+}
+function hasContent(st,sid){
+  st=st||S;
+  const c=counts(st,sid);
+  return c.reported>0 || c.entries>0;
 }
 
 /* ================= setup screen ================= */
 function renderSetup(){
   $("#topbar").classList.add("hidden");
   $("#footbar").classList.add("hidden");
-  const h = pruneHistory();
+  const h=pruneHistory();
   $("#app").innerHTML = `
   <div class="wrap setup">
     <h1>Manager Daily Log</h1>
     <p class="sub">${prettyDate(S.date)}${STORE?" · "+esc(STORE.name):""}</p>
 
-    ${STORE ? "" : `<div class="field">
+    ${STORE?"":`<div class="field">
       <label>Which store?</label>
       <div class="shift-grid" id="storepick">
-        ${stores().map(st=>`<button class="shift-btn" data-store="${esc(st.id)}">
-          <span class="dot"></span><span class="nm">${esc(st.name)}</span>
-        </button>`).join("")}
+        ${stores().map(st=>`<button class="shift-btn" data-store="${esc(st.id)}"><span class="dot"></span><span class="nm">${esc(st.name)}</span></button>`).join("")}
       </div>
-      <p class="hint">Ask for your store's own link and this step disappears for good.</p>
+      <p class="hint">Ask for your store's own link and this question disappears for good.</p>
     </div>`}
 
-    <div class="field">
-      <label for="mgr">Manager on duty</label>
-      <input type="text" id="mgr" placeholder="Your name" value="${esc(S.manager)}" autocomplete="name">
-    </div>
-
-    <div class="field">
-      <label>Which shift are you running?</label>
-      <div class="shift-grid" id="shifts">
-        ${DATA.map(s=>`<button class="shift-btn" data-s="${s.id}">
-          <span class="dot"></span>
-          <span><span class="nm">${esc(s.name)}</span><br><span class="wd">${esc(s.window)}</span></span>
-        </button>`).join("")}
-      </div>
-    </div>
+    ${CODE?"":`<div class="field">
+      <label for="code">Store code</label>
+      <input type="text" id="code" placeholder="Ask your manager for this" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <p class="hint">One time only, on this phone. It's what lets this phone send reports and read the last few days.</p>
+    </div>`}
 
     <div class="field">
       <label>What kind of day is it?</label>
@@ -544,68 +599,96 @@ function renderSetup(){
         <button class="toggle${S.day.delivery?" on":""}" data-d="delivery">Delivery day</button>
         <button class="toggle${S.day.tue?" on":""}" data-d="tue">Price changes</button>
       </div>
-      <p class="hint">These add the order, delivery and price-change reminders to the departments they apply to.</p>
+      <p class="hint">These add the order, delivery and price-change reminders to the departments they apply to. Any manager can change it later.</p>
     </div>
 
-    <button class="primary" id="start" disabled>${STORE?"Pick a shift to start":"Pick your store to start"}</button>
-    ${h.length?`<button class="primary ghost" id="pastbtn" style="margin-top:10px">Past ${RETAIN_DAYS} days (${h.length})</button>`:""}
-    <p class="hint" style="margin-top:16px">Nothing to tick off — walk the store, and write down what's worth telling somebody. Your work saves itself on this device as you type, and the last ${RETAIN_DAYS} days stay available here.</p>
+    <button class="primary" id="start">Start the day</button>
+    ${h.length?`<button class="primary ghost" id="pastbtn" style="margin-top:10px">This phone's past days (${h.length})</button>`:""}
+    <p class="hint" style="margin-top:16px">All three shifts live on one screen — tap between them at the top. Nothing to tick off: walk the store, and write down what's worth telling somebody.</p>
   </div>`;
 
-  function gateStart(){
-    const st=$("#start");
-    if(!STORE){ st.disabled=true; st.textContent="Pick your store to start"; return; }
-    if(!S.shift){ st.disabled=true; st.textContent="Pick a shift to start"; return; }
-    st.disabled=false; st.textContent="Start "+shiftDef(S.shift).short.toLowerCase()+" walk";
-  }
   $$("#storepick .shift-btn").forEach(b=>b.addEventListener("click",()=>{
     $$("#storepick .shift-btn").forEach(x=>x.classList.remove("on"));
     b.classList.add("on");
     setStore(stores().find(x=>x.id===b.dataset.store)||null);
     S.store=STORE?STORE.name:""; S.storeId=STORE?STORE.id:""; save();
-    $(".setup .sub").textContent = prettyDate(S.date)+(STORE?" · "+STORE.name:"");
-    gateStart();
-  }));
-  $("#mgr").addEventListener("input",e=>{S.manager=e.target.value;save();});
-  $$("#shifts .shift-btn").forEach(b=>b.addEventListener("click",()=>{
-    $$("#shifts .shift-btn").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on"); S.shift=b.dataset.s; save();
-    gateStart();
+    $(".setup .sub").textContent=prettyDate(S.date)+(STORE?" · "+STORE.name:"");
   }));
   $$("#daytoggles .toggle").forEach(b=>b.addEventListener("click",()=>{
     b.classList.toggle("on"); S.day[b.dataset.d]=b.classList.contains("on"); save();
   }));
-  $("#start").addEventListener("click",()=>{ if(S.shift && STORE){ save(); renderList(); }});
+  $("#start").addEventListener("click",()=>{
+    if(!STORE){ toast("Pick your store first"); return; }
+    if($("#code")) setCode($("#code").value);
+    S.started=true; save(); renderMain();
+  });
   if($("#pastbtn")) $("#pastbtn").addEventListener("click", showHistory);
-  if(S.shift){ const b=$(`#shifts [data-s="${S.shift}"]`); if(b) b.click(); }
 }
 
-/* ================= list ================= */
-function renderList(){
-  const def=shiftDef(S.shift);
+/* ================= main view ================= */
+function renderMain(){
   $("#topbar").classList.remove("hidden");
   $("#footbar").classList.remove("hidden");
-  $("#brandline").innerHTML = `${STORE?esc(STORE.name)+" · ":""}${esc(def.short)}<small>${prettyDate(S.date)}${S.manager?" · "+esc(S.manager):""}</small>`;
+  renderTabs();
+  if(S.shift===RECENT) renderRecent(); else renderShift();
+  refresh();
+}
 
+function renderTabs(){
+  $("#tabs").innerHTML = SHIFT_IDS.map(id=>{
+    const def=shiftDef(id);
+    const state = S.sent[id] ? "sent" : (hasContent(S,id) ? "wip" : "");
+    return `<button class="stab${S.shift===id?" on":""}${state?" "+state:""}" data-tab="${id}">
+      ${esc(def.short)}${state==="sent"?'<span class="tmark">✓</span>':(state==="wip"?'<span class="tdot"></span>':"")}
+    </button>`;
+  }).join("") + `<button class="stab${S.shift===RECENT?" on":""}" data-tab="${RECENT}">${LOOKBACK_DAYS} days</button>`;
+
+  $$("#tabs .stab").forEach(b=> b.addEventListener("click",()=>{
+    if(S.shift===b.dataset.tab) return;
+    S.shift=b.dataset.tab; save();
+    renderMain();
+    window.scrollTo({top:0});
+  }));
+}
+
+function renderShift(){
+  const def=shiftDef(S.shift);
   let html='<div class="wrap">';
+  html += `<div class="namebar">
+    <label for="mgrname">${esc(def.name)} — who's on?</label>
+    <input type="text" id="mgrname" placeholder="Your name" autocomplete="name" value="${esc(S.managers[S.shift]||"")}">
+    ${S.sent[S.shift]?`<span class="sentmark">Sent ${new Date(S.sent[S.shift]).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</span>`:""}
+  </div>`;
+
   def.blocks.forEach((b,bi)=>{
     html += `<section class="block"><h2>${esc(b.time)}</h2>`;
     b.depts.forEach((d,di)=> html += deptHTML(d,bi,di));
     html += `</section>`;
   });
-  html += '<div style="height:6px"></div></div>';
-  $("#app").innerHTML = html;
-  refresh();
+
+  html += `<div class="endcard">
+    <h3>Finishing up</h3>
+    <p>Send this shift when you're done walking. Anyone can send more than once — the newest one replaces the last.</p>
+    <button class="primary" id="endsend">Review &amp; send ${esc(def.short.toLowerCase())}</button>
+    <button class="primary ghost danger" id="closeday">Close out the day</button>
+    <p class="hint">Closing out sends anything still waiting, files the day away, and clears the screen for tomorrow. Usually the last thing the closing manager does.</p>
+  </div>`;
+
+  html += '</div>';
+  $("#app").innerHTML=html;
+
+  $("#mgrname").addEventListener("input",e=>{ S.managers[S.shift]=e.target.value; save(); });
+  $("#endsend").addEventListener("click", showSummary);
+  $("#closeday").addEventListener("click", askCloseDay);
 }
 
 function deptHTML(d,bi,di){
-  const id = S.shift+"."+bi+"."+di;
-  const r = S.depts[id]||{s:null,e:[]};
-  const open = S.open[id]===true;
-  const guide = (d.guide||[]).filter(g=> tagOK(typeof g==="string"?null:g.tag))
-    .map(g=> typeof g==="string" ? `<li>${esc(g)}</li>`
-      : g.h ? `<li class="gh">${esc(g.h)}</li>` : `<li>${esc(g.t)}</li>`).join("");
-  const guideCount = (d.guide||[]).filter(g=> tagOK(typeof g==="string"?null:g.tag) && (typeof g==="string"||g.t)).length;
+  const id=S.shift+"."+bi+"."+di;
+  const r=S.depts[id]||{s:null,e:[]};
+  const open=S.open[id]===true;
+  const guide=(d.guide||[]).filter(g=> tagOK(typeof g==="string"?null:g.tag))
+    .map(g=> typeof g==="string" ? `<li>${esc(g)}</li>` : (g.h?`<li class="gh">${esc(g.h)}</li>`:`<li>${esc(g.t)}</li>`)).join("");
+  const guideCount=(d.guide||[]).filter(g=> tagOK(typeof g==="string"?null:g.tag) && (typeof g==="string"||g.t)).length;
 
   return `<div class="dept${r.s?" has-status":""}${open?" open":""}" data-dept="${id}">
     <button class="dept-head" data-open="${id}">
@@ -616,15 +699,11 @@ function deptHTML(d,bi,di){
     </button>
     <div class="dept-body${open?"":" hidden"}">
       ${guideCount?`<details class="guide"><summary>What to look at <b>(${guideCount})</b></summary><ul>${guide}</ul></details>`:""}
-
       <div class="statusrow">
         ${Object.keys(STATUS).map(k=>`<button class="st st-${k}${r.s===k?" on":""}" data-status="${id}:${k}">${STATUS[k].label}</button>`).join("")}
       </div>
-
       ${(d.report||[]).length?`<div class="prompts"><span>Worth reporting on</span><ul>${d.report.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`:""}
-
       <div class="entries" data-entries="${id}">${(r.e||[]).map(en=>entryHTML(id,en)).join("")}</div>
-
       <div class="addrow">
         ${TYPE_ORDER.map(t=>`<button class="add a-${t}" data-add="${id}:${t}">+ ${esc(TYPES[t].short)}</button>`).join("")}
       </div>
@@ -648,9 +727,8 @@ function entryHTML(deptId,en){
 }
 
 /* ================= interactions ================= */
-function wireList(){
+function wireApp(){
   const app=$("#app");
-
   app.addEventListener("click", e=>{
     const t=e.target.closest("[data-open],[data-status],[data-add],[data-del]");
     if(!t) return;
@@ -662,39 +740,31 @@ function wireList(){
       $(".dept-body",card).classList.toggle("hidden",!nowOpen);
       S.open[id]=nowOpen; save(); return;
     }
-
     if(t.dataset.status){
-      const [id,k]=t.dataset.status.split(":");
-      const r=drec(id);
+      const [id,k]=t.dataset.status.split(":"); const r=drec(id);
       r.s = (r.s===k? null : k); save();
       const card=t.closest(".dept");
       $$(".st",card).forEach(b=> b.classList.toggle("on", b.dataset.status===id+":"+r.s));
       card.classList.toggle("has-status", !!r.s);
       refresh(); return;
     }
-
     if(t.dataset.add){
-      const [id,type]=t.dataset.add.split(":");
-      const r=drec(id);
-      const en={i:S.seq++, t:type, r: TYPES[type].routed? (type==="staffing"?"HR":"Higher Management") : "", x:""};
+      const [id,type]=t.dataset.add.split(":"); const r=drec(id);
+      const en={i:S.seq++, t:type, r:TYPES[type].routed?(type==="staffing"?"HR":"Higher Management"):"", x:""};
       r.e.push(en);
-      // logging a problem shouldn't leave the department reading "all good"
-      if(!r.s) r.s = (type==="win" ? "good" : "attn");
+      if(!r.s) r.s=(type==="win"?"good":"attn");
       else if((type==="issue"||type==="concern") && r.s==="good") r.s="attn";
       save();
-      const box=$(`[data-entries="${id}"]`);
-      box.insertAdjacentHTML("beforeend", entryHTML(id,en));
+      $(`[data-entries="${id}"]`).insertAdjacentHTML("beforeend", entryHTML(id,en));
       const card=t.closest(".dept");
       $$(".st",card).forEach(b=> b.classList.toggle("on", b.dataset.status===id+":"+r.s));
       card.classList.add("has-status");
       const ta=$(`[data-text="${id}:${en.i}"]`); if(ta) ta.focus();
       refresh(); return;
     }
-
     if(t.dataset.del){
-      const [id,i]=t.dataset.del.split(":");
-      const r=drec(id);
-      r.e = r.e.filter(x=> String(x.i)!==i); save();
+      const [id,i]=t.dataset.del.split(":"); const r=drec(id);
+      r.e=r.e.filter(x=>String(x.i)!==i); save();
       const el=t.closest(".entry"); if(el) el.remove();
       refresh(); return;
     }
@@ -719,34 +789,44 @@ function wireList(){
 }
 
 function refresh(){
+  const def=shiftDef(S.shift);
+  $("#brandline").innerHTML = `${STORE?esc(STORE.name):"Manager Daily Log"}<small>${prettyDate(S.date)}</small>`;
+
+  if(S.shift===RECENT){
+    $("#progress").classList.add("hidden");
+    $("#footbar").classList.add("hidden");
+    return;
+  }
+  $("#progress").classList.remove("hidden");
+  $("#footbar").classList.remove("hidden");
+
   const c=counts();
-  $("#pctnum").innerHTML = `<b>${c.reported}</b> of ${c.total} departments logged`;
+  $("#pctnum").innerHTML=`<b>${c.reported}</b> of ${c.total} departments logged`;
   const bits=[];
   if(c.issues) bits.push(c.issues+" issue"+(c.issues>1?"s":""));
   if(c.entries) bits.push(c.entries+" note"+(c.entries>1?"s":""));
   $("#pctright").textContent = bits.join(" · ") || "nothing logged yet";
-  $("#barfill").style.width = c.pct+"%";
+  $("#barfill").style.width=c.pct+"%";
 
   deptList().forEach(({id})=>{
     const p=$(`[data-pill="${id}"]`); if(!p) return;
     const r=S.depts[id]||{};
     const n=(r.e||[]).filter(x=>(x.x||"").trim()).length;
-    p.className = "pill s-"+(r.s||"none");
-    p.textContent = (r.s?STATUS[r.s].short:"Not yet") + (n? " · "+n : "");
+    p.className="pill s-"+(r.s||"none");
+    p.textContent=(r.s?STATUS[r.s].short:"Not yet")+(n?" · "+n:"");
   });
 
-  const sub=$("#submitbtn");
-  if(sub) sub.textContent = S.submittedAt ? "Send update to office" : "Send to office";
+  renderTabs();
+  const sb=$("#submitbtn"); if(sb) sb.textContent = S.sent[S.shift] ? "Send update" : "Send to office";
 }
 
 /* ================= report ================= */
-function collect(st){
-  st=st||S;
-  const out={issues:[],concern:[],win:[],product:[],staffing:[],skipped:[],attn:[]};
-  deptList(st).forEach(({d,id,block})=>{
+function collect(st,sid){
+  st=st||S; sid=sid||st.shift;
+  const out={issues:[],concern:[],win:[],product:[],staffing:[],skipped:[]};
+  deptList(st,sid).forEach(({d,id,block})=>{
     const r=(st.depts||{})[id]||{};
     if(r.s==="skip") out.skipped.push(d.name);
-    if(r.s==="attn") out.attn.push(d.name);
     (r.e||[]).forEach(en=>{
       const x=(en.x||"").trim(); if(!x) return;
       const row={dept:d.name, block, type:en.t, route:en.r||"", text:x};
@@ -756,16 +836,17 @@ function collect(st){
   return out;
 }
 
-function buildReport(st){
-  st=st||S;
-  const def=shiftDef(st.shift); if(!def) return "";
-  const c=counts(st), g=collect(st), L=[];
+function buildReport(st,sid){
+  st=st||S; sid=sid||st.shift;
+  const def=shiftDef(sid); if(!def) return "";
+  const c=counts(st,sid), g=collect(st,sid), L=[];
   const D="---------------------------------";
 
   L.push("MANAGER DAILY LOG — "+def.name.toUpperCase());
   if(st.store) L.push("Store: "+st.store);
   L.push(prettyDate(st.date));
-  if(st.manager) L.push("Manager: "+st.manager);
+  const mgr=(st.managers||{})[sid]||"";
+  if(mgr) L.push("Manager: "+mgr);
   const dt=[st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean);
   if(dt.length) L.push("Day type: "+dt.join(", "));
   L.push("Departments logged: "+c.reported+" of "+c.total+"  ("+c.good+" all good, "+c.attn+" need attention, "+c.skip+" not covered)");
@@ -777,48 +858,45 @@ function buildReport(st){
       const rows=g.issues.filter(i=>(i.route||"")===rt);
       if(!rows.length) return;
       L.push(""); L.push("> "+(rt||"UNROUTED").toUpperCase());
-      rows.forEach(r=>{ L.push("  ["+r.dept+"] "+r.text); });
+      rows.forEach(r=> L.push("  ["+r.dept+"] "+r.text));
     });
     L.push("");
   }
-
   [["concern","CONCERNS / WATCH ITEMS"],["product","PRODUCT & WASTE"],["staffing","STAFFING"],["win","WINS"]].forEach(([k,title])=>{
     if(!g[k].length) return;
     L.push(D); L.push(title+" ("+g[k].length+")"); L.push(D);
     g[k].forEach(r=> L.push("  ["+r.dept+"]"+(r.route?" ("+r.route+")":"")+" "+r.text));
     L.push("");
   });
-
   if(g.skipped.length){ L.push(D); L.push("NOT COVERED THIS SHIFT"); L.push(D); L.push("  "+g.skipped.join(", ")); L.push(""); }
-
-  if(!g.issues.length && !g.concern.length && !g.product.length && !g.staffing.length && !g.win.length)
+  if(!g.issues.length&&!g.concern.length&&!g.product.length&&!g.staffing.length&&!g.win.length)
     L.push("No issues, concerns or notes recorded this shift.");
-
   return L.join("\n");
 }
 
-function payload(st){
-  st=st||S;
-  const def=shiftDef(st.shift), c=counts(st);
-  const entries=[];
-  deptList(st).forEach(({d,id,block})=>{
+function payload(st,sid){
+  st=st||S; sid=sid||st.shift;
+  const def=shiftDef(sid), c=counts(st,sid), entries=[];
+  deptList(st,sid).forEach(({d,id,block})=>{
     const r=(st.depts||{})[id]||{};
     (r.e||[]).forEach(en=>{
       const x=(en.x||"").trim(); if(!x) return;
       entries.push({department:d.name, block, status:r.s||"", type:TYPES[en.t].label, route:en.r||"", text:x});
     });
   });
-  const depts = deptList(st).map(({d,id})=>({ name:d.name, status:(st.depts[id]||{}).s||"" }));
   return {
+    code: CODE,
     store: st.store||(STORE?STORE.name:""),
     storeId: st.storeId||(STORE?STORE.id:""),
     date: st.date,
-    shift: def? def.name : st.shift,
-    shiftId: st.shift,
-    manager: st.manager||"",
+    shift: def?def.name:sid,
+    shiftId: sid,
+    manager: (st.managers||{})[sid]||"",
     dayType: [st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean).join(", "),
-    counts: c, depts, entries,
-    report: buildReport(st)
+    counts:c,
+    depts: deptList(st,sid).map(({d,id})=>({name:d.name, status:(st.depts[id]||{}).s||""})),
+    entries,
+    report: buildReport(st,sid)
   };
 }
 
@@ -828,93 +906,227 @@ function setOutbox(o){ try{ localStorage.setItem(OKEY, JSON.stringify(o)); }catc
 
 async function postOnce(p){
   if(!CFG.endpoint) throw new Error("no-endpoint");
-  const res = await fetch(CFG.endpoint, {
-    method:"POST",
-    headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body: JSON.stringify(p),
-    redirect:"follow"
-  });
-  const txt = await res.text();
+  const res=await fetch(CFG.endpoint,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p),redirect:"follow"});
+  const txt=await res.text();
   let j=null; try{ j=JSON.parse(txt); }catch(e){}
+  if(j && j.error==="bad-code"){ const e=new Error("bad-code"); e.fatal=true; throw e; }
   if(!res.ok || (j && j.ok===false)) throw new Error((j&&j.error)||("HTTP "+res.status));
   return j||{ok:true};
 }
 
 async function flushOutbox(silent){
-  const o=outbox(); if(!o.length || !CFG.endpoint) return;
+  const o=outbox(); if(!o.length||!CFG.endpoint) return;
   const left=[];
   for(const p of o){
-    try{ await postOnce(p); }catch(e){ left.push(p); }
+    p.code=CODE;
+    try{ await postOnce(p); }
+    catch(e){ if(!e.fatal) left.push(p); }
   }
-  setOutbox(left);
-  updateQueueChip();
-  if(!silent && left.length===0) toast("Queued reports sent");
+  setOutbox(left); updateQueueChip();
+  if(!silent && !left.length) toast("Queued reports sent");
 }
-
 function updateQueueChip(){
-  const n=outbox().length, el=$("#queuechip");
-  if(!el) return;
+  const n=outbox().length, el=$("#queuechip"); if(!el) return;
   el.classList.toggle("hidden", n===0);
-  el.textContent = n+" waiting to send";
+  el.textContent=n+" waiting to send";
 }
 
-async function submit(){
-  const c=counts();
-  if(!c.reported){ toast("Log at least one department first"); return; }
-  const p=payload();
-  if(!CFG.endpoint){
-    openSheet("Not connected yet", `<p>This copy isn't connected to the office sheet yet, so there's nowhere to send it. You can still copy, download or print the report.</p>
-      <div class="field" style="margin-top:16px"><label for="ep">Office link (paste once)</label><input type="text" id="ep" placeholder="https://script.google.com/macros/s/.../exec"></div>`,
-      [{label:"Save link", cls:"go", fn:()=>{ const v=$("#ep").value.trim(); if(!v) return; CFG.endpoint=v; saveCfg(); closeSheet(); toast("Saved — try sending again"); }},
-       {label:"Close", fn:closeSheet}]);
-    return;
-  }
-  const btn=$("#submitbtn"); const old=btn.textContent;
-  btn.disabled=true; btn.textContent="Sending…";
+async function sendShift(sid, quiet){
+  const p=payload(S,sid);
+  if(!CFG.endpoint){ if(!quiet) askEndpoint(); return false; }
+  if(!CODE){ if(!quiet) askCode(); return false; }
   try{
     await postOnce(p);
-    S.submittedAt = new Date().toISOString(); save();
-    toast("Sent to the office");
-    closeSheet();
+    S.sent[sid]=new Date().toISOString(); save();
+    return true;
   }catch(err){
-    const o=outbox().filter(x=>!(x.date===p.date && x.shiftId===p.shiftId)); o.push(p); setOutbox(o);
-    S.submittedAt = new Date().toISOString(); save();
-    toast("No connection — saved and will send itself later");
+    if(err.fatal){ setCode(""); if(!quiet) askCode("That store code wasn't accepted. Try again."); return false; }
+    const o=outbox().filter(x=>!(x.date===p.date && x.shiftId===p.shiftId && x.store===p.store));
+    o.push(p); setOutbox(o);
+    S.sent[sid]=new Date().toISOString(); save();
     updateQueueChip();
+    if(!quiet) toast("No connection — saved and it will send itself later");
+    return true;
   }
-  btn.disabled=false; btn.textContent=old;
-  refresh();
 }
 
-/* ================= sheets / summary ================= */
+function askCode(msg){
+  openSheet("Store code", `
+    <p style="margin-top:0">${esc(msg||"This phone needs the store code before it can send. You only type it once.")}</p>
+    <div class="field"><label for="c2">Store code</label><input type="text" id="c2" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`,
+    [{label:"Save", cls:"go", fn:()=>{ setCode($("#c2").value); closeSheet(); toast(CODE?"Saved — try again":"Nothing entered"); }},
+     {label:"Cancel", fn:closeSheet}]);
+}
+function askEndpoint(){
+  openSheet("Not connected", `
+    <p style="margin-top:0">This copy hasn't been given the office link, so there's nowhere to send. You can still copy or download the report.</p>
+    <div class="field"><label for="ep">Office link</label><input type="text" id="ep" placeholder="https://script.google.com/macros/s/.../exec"></div>`,
+    [{label:"Save link", cls:"go", fn:()=>{ const v=$("#ep").value.trim(); if(v){CFG.endpoint=v; saveCfg();} closeSheet(); }},
+     {label:"Close", fn:closeSheet}]);
+}
+
+/* ================= summary sheet ================= */
 function showSummary(){
-  const c=counts(), g=collect(), rep=buildReport();
+  const sid=S.shift, c=counts(S,sid), g=collect(S,sid), rep=buildReport(S,sid);
   openSheet("Shift report", `
     <div class="stats">
       <div class="stat"><b>${c.reported}/${c.total}</b><span>Logged</span></div>
       <div class="stat issue"><b>${g.issues.length}</b><span>Issues</span></div>
       <div class="stat win"><b>${g.win.length}</b><span>Wins</span></div>
     </div>
-    ${S.submittedAt?`<p class="sent">Last sent ${new Date(S.submittedAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}. Sending again replaces it.</p>`:""}
+    ${S.sent[sid]?`<p class="sent">Already sent ${new Date(S.sent[sid]).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}. Sending again replaces it.</p>`:""}
     <pre class="report" id="reporttext">${esc(rep)}</pre>`,
-    [{label:S.submittedAt?"Send update":"Send to office", cls:"go", id:"submitbtn", fn:submit},
+    [{label:S.sent[sid]?"Send update":"Send to office", cls:"go", id:"submitbtn", fn:async()=>{
+        if(!counts(S,sid).reported){ toast("Log at least one department first"); return; }
+        const b=$("#submitbtn"); b.disabled=true; b.textContent="Sending…";
+        const okd=await sendShift(sid);
+        b.disabled=false;
+        if(okd){ closeSheet(); toast("Sent to the office"); refresh(); } else { b.textContent="Send to office"; }
+      }},
      {label:"Copy", fn:()=>copyText(rep)},
-     {label:"Download", fn:()=>download(rep)}]);
+     {label:"Download", fn:()=>download(rep,sid)}]);
 }
 
+/* ================= close out the day ================= */
+function askCloseDay(){
+  const withContent=SHIFT_IDS.filter(id=>hasContent(S,id));
+  const unsent=withContent.filter(id=>!S.sent[id]);
+  const rows=SHIFT_IDS.map(id=>{
+    const def=shiftDef(id);
+    const state = !hasContent(S,id) ? "nothing logged" : (S.sent[id]? "sent" : "will be sent now");
+    return `<div class="repeat"><span class="dot ${!hasContent(S,id)?"d-none":(S.sent[id]?"d-good":"d-warn")}"></span>
+      <div><b>${esc(def.name)}</b><br><span style="color:var(--ink-2)">${esc(state)}</span></div></div>`;
+  }).join("");
+
+  openSheet("Close out the day", `
+    <p style="margin-top:0">This files today away and clears the screen so tomorrow starts clean. You can still read today under <b>This phone's past days</b>.</p>
+    ${rows}
+    ${unsent.length?`<p style="margin-top:14px"><b>${unsent.length} shift${unsent.length>1?"s":""}</b> will be sent to the office first.</p>`:""}
+    ${!withContent.length?`<p style="margin-top:14px">Nothing has been logged today, so there's nothing to send.</p>`:""}`,
+    [{label:"Close out the day", cls:"go danger", id:"cdbtn", fn:doCloseDay},
+     {label:"Not yet", fn:closeSheet}]);
+}
+
+async function doCloseDay(){
+  const b=$("#cdbtn"); if(b){ b.disabled=true; b.textContent="Closing…"; }
+  for(const sid of SHIFT_IDS){
+    if(hasContent(S,sid) && !S.sent[sid]) await sendShift(sid, true);
+  }
+  archiveAll(S);
+  const st=STORE;
+  S=blank(); S.store=st?st.name:""; S.storeId=st?st.id:"";
+  save();
+  closeSheet();
+  renderClosed();
+}
+
+function renderClosed(){
+  $("#topbar").classList.add("hidden");
+  $("#footbar").classList.add("hidden");
+  $("#app").innerHTML=`
+  <div class="wrap setup" style="text-align:center;padding-top:16vh">
+    <div class="bigcheck">✓</div>
+    <h1>Day closed</h1>
+    <p class="sub">${esc(prettyDate(todayKey()))}${STORE?" · "+esc(STORE.name):""}</p>
+    <p class="hint" style="margin-bottom:26px">Everything logged today has been filed and sent. The screen is clear for tomorrow.</p>
+    <button class="primary" id="backbtn">Start a new day</button>
+    <button class="primary ghost" id="pastbtn2" style="margin-top:10px">Read today's reports</button>
+  </div>`;
+  $("#backbtn").addEventListener("click",()=>{ renderSetup(); });
+  $("#pastbtn2").addEventListener("click", showHistory);
+}
+
+/* ================= last 3 days ================= */
+let RECENT_CACHE=null;
+function renderRecent(){
+  $("#app").innerHTML=`<div class="wrap">
+    <div class="recenthead">
+      <div><b>What's been reported</b><br><span>Every shift at ${esc(STORE?STORE.name:"this store")}, last ${LOOKBACK_DAYS} days</span></div>
+      <button class="chip" id="rrefresh">Refresh</button>
+    </div>
+    <div id="recentbody"><p class="loading">Loading…</p></div>
+  </div>`;
+  $("#rrefresh").addEventListener("click",()=>{ RECENT_CACHE=null; loadRecent(); });
+  loadRecent();
+}
+
+async function loadRecent(){
+  const box=$("#recentbody"); if(!box) return;
+  if(!CFG.endpoint){ box.innerHTML='<p class="loading">This copy has no office link, so there is nothing to read back.</p>'; return; }
+  if(!CODE){
+    box.innerHTML=`<div class="endcard"><h3>Store code needed</h3>
+      <p>Reading other managers' notes needs the store code. One time only, on this phone.</p>
+      <button class="primary" id="rcode">Enter store code</button></div>`;
+    $("#rcode").addEventListener("click",()=>askCode());
+    return;
+  }
+  if(RECENT_CACHE){ paintRecent(RECENT_CACHE); return; }
+  box.innerHTML='<p class="loading">Loading…</p>';
+  try{
+    const url=CFG.endpoint+"?action=recent&code="+encodeURIComponent(CODE)
+      +"&store="+encodeURIComponent(STORE?STORE.name:"")+"&days="+LOOKBACK_DAYS;
+    const res=await fetch(url,{redirect:"follow"});
+    const j=await res.json();
+    if(!j.ok) throw new Error(j.error||"failed");
+    RECENT_CACHE=j; paintRecent(j);
+  }catch(err){
+    const bad=/code/i.test(String(err.message||""));
+    box.innerHTML=`<div class="endcard"><h3>${bad?"That code wasn't accepted":"Couldn't load"}</h3>
+      <p>${bad?"Check the store code with your manager.":"No connection, or the office link isn't reachable right now. Your own shifts are still under the menu, in this phone's past days."}</p>
+      <button class="primary ghost" id="rretry">${bad?"Enter store code":"Try again"}</button></div>`;
+    $("#rretry").addEventListener("click",()=> bad? askCode() : loadRecent());
+  }
+}
+
+function paintRecent(j){
+  const box=$("#recentbody");
+  const entries=(j.entries||[]);
+  const shifts=(j.shifts||[]);
+  if(!shifts.length){ box.innerHTML='<p class="loading">Nothing has been sent in from this store in the last '+LOOKBACK_DAYS+' days.</p>'; return; }
+
+  const openCount=entries.filter(e=>e.Type==="Issue").length;
+  const days=[]; const byDay={};
+  shifts.forEach(s=>{ if(!byDay[s.Date]){byDay[s.Date]=[];days.push(s.Date)} byDay[s.Date].push(s); });
+  days.sort().reverse();
+
+  let html=`<div class="stats" style="margin-bottom:16px">
+    <div class="stat"><b>${shifts.length}</b><span>Shifts</span></div>
+    <div class="stat issue"><b>${openCount}</b><span>Issues</span></div>
+    <div class="stat win"><b>${entries.filter(e=>e.Type==="Win").length}</b><span>Wins</span></div>
+  </div>`;
+
+  days.forEach(d=>{
+    html+=`<section class="block"><h2>${esc(shortDate(d))}${d===todayKey()?" · today":""}</h2>`;
+    byDay[d].sort((a,b)=>String(a.Shift).localeCompare(String(b.Shift))).forEach(s=>{
+      const mine=entries.filter(e=>e.Date===d && e.Shift===s.Shift);
+      html+=`<div class="rshift">
+        <div class="rshift-head"><b>${esc(s.Shift)}</b><span>${esc(s.Manager||"no name")}</span></div>
+        ${mine.length? mine.map(e=>`<div class="rent t-${esc(String(e.Type).split(" ")[0])}">
+            <div class="rent-top"><span class="tag">${esc(e.Type)}</span><span class="rdept">${esc(e.Department)}</span>${e["Route to"]?`<span class="rroute">→ ${esc(e["Route to"])}</span>`:""}</div>
+            <p>${esc(e.Detail)}</p>
+          </div>`).join("")
+          : '<p class="rnone">No notes written this shift.</p>'}
+      </div>`;
+    });
+    html+=`</section>`;
+  });
+  box.innerHTML=html;
+}
+
+/* ================= history / sheets / utils ================= */
 function showHistory(){
   const h=pruneHistory();
-  const body = h.length ? h.map((e,i)=>`
+  const body=h.length? h.map((e,i)=>`
     <div class="dept open" style="margin-bottom:9px">
       <button class="dept-head" data-h="${i}">
         <span class="nm">${esc(shortDate(e.date))}</span>
-        <span class="pill s-good">${esc(shiftDef(e.shift)?shiftDef(e.shift).short:e.shift)}</span>
+        <span class="pill s-good">${esc(e.shift||"")}</span>
         <span class="caret"></span>
       </button>
       <div class="dept-body hidden" style="padding:12px"><pre class="report">${esc(e.report)}</pre></div>
     </div>`).join("")
-    : `<p>Nothing saved yet. Completed days are kept here for ${RETAIN_DAYS} days.</p>`;
-  openSheet("Past "+RETAIN_DAYS+" days", body, [{label:"Close", cls:"go", fn:closeSheet}]);
+    : `<p>Nothing filed yet. Days you close out are kept here for ${RETAIN_DAYS} days.</p>`;
+  openSheet("This phone's past days", body, [{label:"Close", cls:"go", fn:closeSheet}]);
   $$("[data-h]").forEach(b=> b.addEventListener("click",()=>{
     const c=b.closest(".dept"); c.classList.toggle("open"); $(".dept-body",c).classList.toggle("hidden");
   }));
@@ -947,7 +1159,6 @@ function toast(m){
   t.textContent=m; requestAnimationFrame(()=>t.classList.add("show"));
   clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove("show"),2400);
 }
-
 function copyText(txt){
   const done=()=>toast("Copied — paste it anywhere");
   const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt;
@@ -955,10 +1166,8 @@ function copyText(txt){
     ta.focus(); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){ toast("Select the text to copy"); } ta.remove(); };
   if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done).catch(fb); else fb();
 }
-
-function download(txt){
-  const def=shiftDef(S.shift);
-  const name="manager-log-"+S.date+"-"+def.id+(S.manager?"-"+S.manager.trim().toLowerCase().replace(/[^a-z0-9]+/g,"-"):"")+".txt";
+function download(txt,sid){
+  const name="manager-log-"+S.date+"-"+(sid||S.shift)+".txt";
   const b=new Blob([txt],{type:"text/plain;charset=utf-8"}), u=URL.createObjectURL(b);
   const a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click();
   setTimeout(()=>{a.remove();URL.revokeObjectURL(u);},400);
@@ -970,9 +1179,9 @@ function wireChrome(){
   $("#daybtn").addEventListener("click",()=>{
     const rows=[["order","Order day"],["delivery","Delivery day"],["tue","Price changes"]];
     openSheet("Today's day type",
-      `<p style="margin-top:0;color:var(--ink-2);font-size:14px">These add the matching reminders to each department's "what to look at" list.</p>
+      `<p style="margin-top:0">These add the matching reminders to each department's "what to look at" list, on every shift.</p>
        <div class="toggle-row" id="sheettoggles">${rows.map(([k,l])=>`<button class="toggle${S.day[k]?" on":""}" data-d="${k}">${l}</button>`).join("")}</div>`,
-      [{label:"Done", cls:"go", fn:()=>{ closeSheet(); renderList(); }}]);
+      [{label:"Done", cls:"go", fn:()=>{ closeSheet(); renderMain(); }}]);
     $$("#sheettoggles .toggle").forEach(b=>b.addEventListener("click",()=>{
       b.classList.toggle("on"); S.day[b.dataset.d]=b.classList.contains("on"); save();
     }));
@@ -981,38 +1190,31 @@ function wireChrome(){
   $("#menubtn").addEventListener("click",()=>{
     const n=outbox().length;
     openSheet("Menu", `<div style="display:grid;gap:9px">
-      <button class="primary ghost" id="m-shift">Switch shift</button>
-      <button class="primary ghost" id="m-past">Past ${RETAIN_DAYS} days</button>
+      <button class="primary ghost" id="m-past">This phone's past days</button>
       ${n?`<button class="primary ghost" id="m-flush">Send ${n} waiting report${n>1?"s":""}</button>`:""}
       ${stores().length>1?`<button class="primary ghost" id="m-store">Change store (now ${esc(STORE?STORE.name:"none")})</button>`:""}
-      <button class="primary ghost" id="m-settings">Office link</button>
-      <button class="primary ghost" id="m-reset" style="color:var(--red)">Clear today and start over</button>
+      <button class="primary ghost" id="m-settings">Store code &amp; office link</button>
+      <button class="primary ghost danger" id="m-close">Close out the day</button>
     </div>
-    <p class="hint" style="margin-top:16px">Everything saves on this device as you type. Days older than ${RETAIN_DAYS} clear themselves.</p>`,
+    <p class="hint" style="margin-top:16px">Everything saves on this phone as you type. Days you close out are kept here for ${RETAIN_DAYS} days.</p>`,
     [{label:"Close", cls:"go", fn:closeSheet}]);
 
-    $("#m-shift").addEventListener("click",()=>{closeSheet();renderSetup();});
     $("#m-past").addEventListener("click",()=>{closeSheet();showHistory();});
     if($("#m-flush")) $("#m-flush").addEventListener("click",()=>{closeSheet();flushOutbox();});
     if($("#m-store")) $("#m-store").addEventListener("click",()=>{
-      if(!confirm("Switch this phone to a different store? Anything logged today that has not been sent will be cleared.")) return;
-      setStore(null); const m=S.manager; S=blank(); S.manager=m; save(); closeSheet(); renderSetup();
+      if(!confirm("Switch this phone to a different store? Anything logged today that hasn't been sent will be cleared.")) return;
+      setStore(null); S=blank(); save(); closeSheet(); renderSetup();
     });
     $("#m-settings").addEventListener("click",()=>{
       openSheet("Settings", `
-        <p style="margin-top:0">This phone is logging as <b>${STORE?esc(STORE.name):"no store chosen"}</b>.</p>
-        <div class="field"><label for="ep2">Office link</label><input type="text" id="ep2" value="${esc(CFG.endpoint||"")}" placeholder="https://script.google.com/macros/s/.../exec"></div>
-        <p class="hint">Only needed if this phone was opened without the store link. Normally it is already set.</p>`,
-        [{label:"Save", cls:"go", fn:()=>{
-          CFG.endpoint=$("#ep2").value.trim(); saveCfg(); closeSheet(); toast("Saved");
-        }},{label:"Cancel", fn:closeSheet}]);
+        <p style="margin-top:0">This phone logs as <b>${STORE?esc(STORE.name):"no store chosen"}</b>.</p>
+        <div class="field"><label for="c3">Store code</label><input type="text" id="c3" value="${esc(CODE)}" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+        <div class="field"><label for="ep3">Office link</label><input type="text" id="ep3" value="${esc(CFG.endpoint||"")}" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <p class="hint">Normally both are already set. Only change these if somebody tells you to.</p>`,
+        [{label:"Save", cls:"go", fn:()=>{ setCode($("#c3").value); CFG.endpoint=$("#ep3").value.trim(); saveCfg(); RECENT_CACHE=null; closeSheet(); toast("Saved"); }},
+         {label:"Cancel", fn:closeSheet}]);
     });
-    $("#m-reset").addEventListener("click",()=>{
-      if(!confirm("Clear everything written today? This can't be undone.")) return;
-      const m=S.manager, sh=S.shift, d=S.day;
-      S=blank(); S.manager=m; S.shift=sh; S.day=d; save();
-      closeSheet(); renderList(); toast("Cleared");
-    });
+    $("#m-close").addEventListener("click",()=>{ closeSheet(); askCloseDay(); });
   });
 
   $("#summarybtn").addEventListener("click", showSummary);
@@ -1031,13 +1233,13 @@ function wireChrome(){
 /* ================= boot ================= */
 load();
 wireChrome();
-wireList();
+wireApp();
 updateQueueChip();
-if(STORE && S.shift && Object.keys(S.depts).length) renderList(); else renderSetup();
+if(STORE && S.started) renderMain(); else renderSetup();
 flushOutbox(true);
 
 setInterval(()=>{
-  if(S.date!==todayKey()){ archive(S); const m=S.manager; S=blank(); S.manager=m; save(); renderSetup(); }
+  if(S.date!==todayKey()){ archiveAll(S); S=blank(); save(); renderSetup(); }
   flushOutbox(true);
 }, 60000);
 window.addEventListener("online", ()=>flushOutbox(true));

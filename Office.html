@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manager Log — Office</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --ring:rgba(11,11,11,.10);
+  /* sequential blue, low→high; validated ordinal on this surface */
+  --seq-1:#86b6ef; --seq-2:#5598e7; --seq-3:#2a78d6; --seq-4:#1c5cab; --seq-5:#104281;
+  --accent:#256abf; --accent-ink:#fff;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --t-issue:#a4322a;   --t-issue-bg:#fbeceb;
+  --t-concern:#a8630f; --t-concern-bg:#fdf1de;
+  --t-product:#7a4a12; --t-product-bg:#f6eede;
+  --t-staffing:#6b4a7a;--t-staffing-bg:#f2ecf5;
+  --t-win:#1f6b45;     --t-win-bg:#e8f2ec;
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+    /* on a dark surface the ramp runs the other way: low sits near the surface */
+    --seq-1:#184f95; --seq-2:#3987e5; --seq-3:#6da7ec; --seq-4:#9ec5f4; --seq-5:#cde2fb;
+    --accent:#2a78d6; --accent-ink:#fff;
+    --t-issue:#e8918b;   --t-issue-bg:#3a1f1d;
+    --t-concern:#e5b978; --t-concern-bg:#3a2c15;
+    --t-product:#d9b478; --t-product-bg:#33270f;
+    --t-staffing:#c5aad2;--t-staffing-bg:#2b2233;
+    --t-win:#7cc79f;     --t-win-bg:#152c21;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:48px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.hidden{display:none!important}
+.wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+
+/* gate */
+.gate{max-width:380px;margin:14vh auto;padding:0 18px;text-align:center}
+.gate h1{font-size:23px;letter-spacing:-.02em;margin:0 0 6px}
+.gate p{color:var(--ink-2);margin:0 0 22px;font-size:14px}
+.gate input{width:100%;padding:13px 14px;border:1px solid var(--baseline);border-radius:11px;background:var(--surface);text-align:center;letter-spacing:.06em}
+.gate button{width:100%;margin-top:10px;background:var(--accent);color:var(--accent-ink);border-radius:11px;padding:14px;font-weight:700}
+.err{color:var(--critical);font-size:13.5px;font-weight:600;margin-top:12px;min-height:20px}
+
+/* header */
+header{border-bottom:1px solid var(--grid);background:var(--surface);position:sticky;top:0;z-index:20}
+.hrow{display:flex;align-items:center;gap:14px;padding:14px 0;flex-wrap:wrap}
+.hrow h1{font-size:18px;margin:0;letter-spacing:-.02em;flex:1;min-width:180px}
+.hrow h1 span{display:block;font-size:12.5px;font-weight:500;color:var(--muted);letter-spacing:0}
+.btn{border:1px solid var(--baseline);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;color:var(--ink-2);background:var(--surface);min-height:36px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;padding:12px 0}
+.filters select,.filters input{border:1px solid var(--baseline);border-radius:9px;padding:8px 11px;background:var(--surface);font-size:13.5px;min-height:38px}
+.filters input{flex:1;min-width:150px}
+
+/* kpi row */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.kpi{background:var(--surface);border:1px solid var(--ring);border-radius:var(--radius);padding:15px 16px}
+.kpi b{display:block;font-size:30px;line-height:1.05;letter-spacing:-.03em}
+.kpi span{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:5px}
+.kpi small{display:block;font-size:12px;color:var(--ink-2);margin-top:4px}
+.kpi.alert b{color:var(--critical)}
+
+/* card */
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:var(--radius);padding:17px 18px;margin-bottom:16px}
+.card > h2{font-size:14px;margin:0 0 3px;letter-spacing:-.01em}
+.card > p.cap{font-size:12.5px;color:var(--muted);margin:0 0 15px}
+
+/* bar chart */
+.bars{display:flex;flex-direction:column;gap:9px}
+.brow{display:grid;grid-template-columns:minmax(96px,150px) 1fr auto;align-items:center;gap:11px}
+.brow .lab{font-size:13px;color:var(--ink-2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:20px;border-left:1px solid var(--baseline)}
+.track i{display:block;height:20px;border-radius:0 4px 4px 0;min-width:2px}
+.brow .val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);min-width:22px;text-align:right}
+.brow:hover .lab{color:var(--ink)}
+
+#storebars .brow{grid-template-columns:minmax(120px,215px) 1fr auto}
+
+/* repeats */
+.repeat{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--grid);font-size:13.5px}
+.repeat:first-child{border-top:0}
+.repeat b{color:var(--ink)}
+.rn{background:var(--critical);color:#fff;border-radius:999px;font-size:11.5px;font-weight:800;padding:3px 8px;flex-shrink:0}
+
+/* feed */
+.day{margin-bottom:22px}
+.day > h3{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:10px}
+.day > h3::after{content:"";flex:1;height:1px;background:var(--grid)}
+.ent{background:var(--surface);border:1px solid var(--ring);border-left:4px solid var(--baseline);border-radius:11px;padding:12px 14px;margin-bottom:9px}
+.ent .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
+.tag{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+.dept{font-size:13px;font-weight:700}
+.meta{font-size:12px;color:var(--muted);margin-left:auto}
+.ent p{margin:0;font-size:14.5px;line-height:1.5;white-space:pre-wrap}
+.route{font-size:11px;font-weight:700;border:1px solid var(--baseline);border-radius:999px;padding:3px 8px;color:var(--ink-2)}
+.t-Issue{border-left-color:var(--t-issue)} .t-Issue .tag{background:var(--t-issue-bg);color:var(--t-issue)}
+.t-Concern{border-left-color:var(--t-concern)} .t-Concern .tag{background:var(--t-concern-bg);color:var(--t-concern)}
+.t-Product{border-left-color:var(--t-product)} .t-Product .tag{background:var(--t-product-bg);color:var(--t-product)}
+.t-Staffing{border-left-color:var(--t-staffing)} .t-Staffing .tag{background:var(--t-staffing-bg);color:var(--t-staffing)}
+.t-Win{border-left-color:var(--t-win)} .t-Win .tag{background:var(--t-win-bg);color:var(--t-win)}
+
+/* coverage table */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:6px;vertical-align:1px}
+.d-good{background:var(--good)} .d-warn{background:var(--warning)} .d-bad{background:var(--critical)}
+.miss{color:var(--critical);font-size:12.5px}
+
+/* tabs */
+.tabs{display:flex;gap:6px;margin:4px 0 16px}
+.tab{border:1px solid var(--baseline);background:var(--surface);border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--ink-2);min-height:38px}
+.tab.on{background:var(--ink);border-color:var(--ink);color:var(--page)}
+.empty{color:var(--muted);font-size:14px;padding:26px 0;text-align:center}
+pre.rep{white-space:pre-wrap;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--page);border:1px solid var(--grid);border-radius:10px;padding:13px;margin:8px 0 0}
+details.full summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink-2);padding:6px 0}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h1>Manager Log</h1>
+  <p>Enter the office passcode to see the last 15 days.</p>
+  <input type="password" id="pass" placeholder="Passcode" autocomplete="current-password">
+  <button id="go">Open dashboard</button>
+  <div class="err" id="gateerr"></div>
+</div>
+
+<div id="main" class="hidden">
+  <header>
+    <div class="wrap">
+      <div class="hrow">
+        <h1>Manager Log <span id="sub"></span></h1>
+        <button class="btn" id="refresh">Refresh</button>
+        <button class="btn" id="csv">Export CSV</button>
+        <button class="btn" id="out">Lock</button>
+      </div>
+      <div class="filters">
+        <select id="f-store"><option value="">All stores</option></select>
+        <select id="f-type"><option value="">All types</option></select>
+        <select id="f-route"><option value="">Anyone</option></select>
+        <select id="f-dept"><option value="">All departments</option></select>
+        <select id="f-shift"><option value="">All shifts</option></select>
+        <select id="f-days"><option value="15">Last 15 days</option><option value="7">Last 7 days</option><option value="3">Last 3 days</option><option value="1">Today</option></select>
+        <input type="search" id="f-q" placeholder="Search words…">
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card" id="todaycard">
+      <h2>Today</h2>
+      <p class="cap">Which stores have sent a shift in today, and which haven't yet.</p>
+      <div id="today"></div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="card">
+      <h2>Where the problems are</h2>
+      <p class="cap">Issues and concerns per department over this window. Longer, stronger bars mean more. Follows the filters above.</p>
+      <div class="bars" id="bars"></div>
+    </div>
+
+    <div class="card" id="storecard">
+      <h2>Issues by store</h2>
+      <p class="cap">Same window, same filters. Use this to see whether a problem is one store or all of them.</p>
+      <div class="bars" id="storebars"></div>
+    </div>
+
+    <div class="card" id="repeatcard">
+      <h2>Coming up more than once</h2>
+      <p class="cap">Same department, same kind of problem, three or more times in this window.</p>
+      <div id="repeats"></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" data-tab="feed">What managers reported</button>
+      <button class="tab" data-tab="coverage">Shift coverage</button>
+      <button class="tab" data-tab="reports">Full shift reports</button>
+    </div>
+
+    <div id="feed"></div>
+    <div id="coverage" class="hidden"></div>
+    <div id="reports" class="hidden"></div>
+  </div>
+</div>
+
+<script>
+var DATA={shifts:[],entries:[]}, PASS="", TAB="feed";
+var TYPES=["Issue","Concern","Product & waste","Staffing","Win"];
+var ROUTES=["Higher Management","HR","Commissary","Maintenance"];
+var SEQ=["--seq-1","--seq-2","--seq-3","--seq-4","--seq-5"];
+
+function $(s){return document.querySelector(s)}
+function $$(s){return Array.prototype.slice.call(document.querySelectorAll(s))}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function typeClass(t){return "t-"+String(t||"").split(" ")[0]}
+function dnum(d){var p=String(d||"").slice(0,10).split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function prettyDay(d){var x=dnum(d);return isNaN(x)?d:x.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}
+function ago(d){return Math.round((new Date().setHours(0,0,0,0)-dnum(d))/864e5)}
+
+/* ---------- loading ---------- */
+function fetchData(pass, cb){
+  if(window.google && google.script && google.script.run){
+    google.script.run.withSuccessHandler(cb).withFailureHandler(function(e){cb({ok:false,error:String(e&&e.message||e)})}).getData(pass);
+    return;
+  }
+  var url=(window.API_URL||"")+"?action=data&pass="+encodeURIComponent(pass);
+  fetch(url).then(function(r){return r.json()}).then(cb).catch(function(e){cb({ok:false,error:String(e)})});
+}
+
+$("#go").addEventListener("click", unlock);
+$("#pass").addEventListener("keydown", function(e){ if(e.key==="Enter") unlock(); });
+function unlock(){
+  var p=$("#pass").value.trim();
+  if(!p) return;
+  $("#gateerr").textContent="Checking…";
+  fetchData(p, function(res){
+    if(!res || !res.ok){ $("#gateerr").textContent=(res&&res.error)||"Could not reach the sheet"; return; }
+    PASS=p; try{ sessionStorage.setItem("mgr-pass",p); }catch(e){}
+    DATA=res; $("#gate").classList.add("hidden"); $("#main").classList.remove("hidden");
+    initFilters(); render();
+  });
+}
+$("#out").addEventListener("click", function(){
+  try{ sessionStorage.removeItem("mgr-pass"); }catch(e){}
+  location.reload();
+});
+$("#refresh").addEventListener("click", function(){
+  fetchData(PASS, function(res){ if(res&&res.ok){ DATA=res; render(); } });
+});
+
+/* ---------- filters ---------- */
+function initFilters(){
+  fill("#f-store", uniq(DATA.shifts.map(function(s){return s.Store}).concat(DATA.entries.map(function(e){return e.Store}))).sort());
+  fill("#f-type", TYPES);
+  fill("#f-route", ROUTES);
+  fill("#f-dept", uniq(DATA.entries.map(function(e){return e.Department})).sort());
+  fill("#f-shift", uniq(DATA.shifts.map(function(s){return s.Shift})).sort());
+  $$(".filters select, .filters input").forEach(function(el){
+    el.addEventListener("change", render); el.addEventListener("input", render);
+  });
+  $$(".tab").forEach(function(t){ t.addEventListener("click", function(){
+    TAB=t.dataset.tab;
+    $$(".tab").forEach(function(x){x.classList.toggle("on",x===t)});
+    ["feed","coverage","reports"].forEach(function(id){ $("#"+id).classList.toggle("hidden", id!==TAB); });
+    render();
+  })});
+}
+function fill(sel,vals){
+  var el=$(sel);
+  vals.filter(Boolean).forEach(function(v){ var o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o); });
+}
+function uniq(a){ var s={}, o=[]; a.forEach(function(v){ if(v && !s[v]){s[v]=1;o.push(v)} }); return o; }
+
+function filters(){
+  return { store:$("#f-store").value, type:$("#f-type").value, route:$("#f-route").value, dept:$("#f-dept").value,
+           shift:$("#f-shift").value, days:+$("#f-days").value||15, q:$("#f-q").value.trim().toLowerCase() };
+}
+function entries(){
+  var f=filters();
+  return DATA.entries.filter(function(e){
+    if(ago(e.Date) >= f.days) return false;
+    if(f.store && e.Store!==f.store) return false;
+    if(f.type && e.Type!==f.type) return false;
+    if(f.route && e["Route to"]!==f.route) return false;
+    if(f.dept && e.Department!==f.dept) return false;
+    if(f.shift && e.Shift!==f.shift) return false;
+    if(f.q && String(e.Detail||"").toLowerCase().indexOf(f.q)<0 && String(e.Department||"").toLowerCase().indexOf(f.q)<0) return false;
+    return true;
+  }).sort(function(a,b){ return String(b.Date).localeCompare(String(a.Date)); });
+}
+function shifts(){
+  var f=filters();
+  return DATA.shifts.filter(function(s){
+    if(ago(s.Date) >= f.days) return false;
+    if(f.store && s.Store!==f.store) return false;
+    if(f.shift && s.Shift!==f.shift) return false;
+    return true;
+  }).sort(function(a,b){ return String(b.Date).localeCompare(String(a.Date)) || String(a.Shift).localeCompare(String(b.Shift)); });
+}
+
+/* ---------- render ---------- */
+function render(){
+  var es=entries(), ss=shifts(), f=filters();
+  var storeCount = uniq(DATA.shifts.map(function(x){return x.Store})).length;
+  $("#sub").textContent = "Last "+f.days+" day"+(f.days>1?"s":"")+" · "+ss.length+" shift"+(ss.length===1?"":"s")+" logged"+
+    (f.store? " · "+f.store : (storeCount>1? " · "+storeCount+" stores":""));
+  renderToday();
+  renderKpis(es,ss);
+  renderBars(es);
+  renderStoreBars(es);
+  renderRepeats(es);
+  if(TAB==="feed") renderFeed(es);
+  if(TAB==="coverage") renderCoverage(ss);
+  if(TAB==="reports") renderReports(ss);
+}
+
+function allStores(){
+  var names = uniq(DATA.shifts.map(function(s){return s.Store}).concat(DATA.entries.map(function(e){return e.Store})));
+  return names.filter(Boolean).sort();
+}
+function renderToday(){
+  var names=allStores();
+  if(names.length<2){ $("#todaycard").classList.add("hidden"); return; }
+  $("#todaycard").classList.remove("hidden");
+  var today=DATA.shifts.filter(function(s){ return ago(s.Date)===0; });
+  $("#today").innerHTML = names.map(function(n){
+    var mine=today.filter(function(s){return s.Store===n});
+    var issues=mine.reduce(function(a,s){return a+(+s.Issues||0)},0);
+    var cls = mine.length? (issues? "d-warn":"d-good") : "d-bad";
+    var what = mine.length
+      ? mine.map(function(s){return s.Shift.replace(" Manager","")}).join(", ")+(issues? " · "+issues+" issue"+(issues>1?"s":"") : "")
+      : "nothing in yet";
+    return '<div class="repeat"><span class="dot '+cls+'" style="margin-top:7px"></span><div><b>'+esc(n)+'</b><br>'+
+      '<span style="color:var(--ink-2)">'+esc(what)+'</span></div></div>';
+  }).join("");
+}
+
+function renderStoreBars(es){
+  if(allStores().length<2){ $("#storecard").classList.add("hidden"); return; }
+  $("#storecard").classList.remove("hidden");
+  var c={};
+  es.filter(function(e){return e.Type==="Issue"||e.Type==="Concern"}).forEach(function(e){ c[e.Store]=(c[e.Store]||0)+1; });
+  var rows=Object.keys(c).filter(Boolean).map(function(k){return {k:k,v:c[k]}}).sort(function(a,b){return b.v-a.v});
+  if(!rows.length){ $("#storebars").innerHTML='<p class="empty">No issues or concerns in this window.</p>'; return; }
+  var max=rows[0].v;
+  $("#storebars").innerHTML = rows.map(function(r){
+    var step=SEQ[Math.min(SEQ.length-1, Math.floor((r.v/max)*(SEQ.length-1)+0.0001))];
+    return '<div class="brow"><div class="lab" title="'+esc(r.k)+'">'+esc(r.k)+'</div>'+
+      '<div class="track"><i style="width:'+Math.max(2,(r.v/max)*100)+'%;background:var('+step+')"></i></div>'+
+      '<div class="val">'+r.v+'</div></div>';
+  }).join("");
+}
+
+function renderKpis(es,ss){
+  var issues=es.filter(function(e){return e.Type==="Issue"}).length;
+  var wins=es.filter(function(e){return e.Type==="Win"}).length;
+  var notCovered=ss.reduce(function(a,s){return a+(+s["Not covered"]||0)},0);
+  var logged=ss.reduce(function(a,s){return a+(+s.Logged||0)},0);
+  var total=ss.reduce(function(a,s){return a+(+s.Departments||0)},0);
+  var pct= total? Math.round(logged/total*100) : 0;
+  $("#kpis").innerHTML =
+    tile(issues, "Issues raised", byRoute(es), issues>0) +
+    tile(es.length, "Notes in total", wins+" of them wins", false) +
+    tile(pct+"%", "Departments logged", logged+" of "+total+" across "+ss.length+" shift"+(ss.length===1?"":"s"), false) +
+    tile(notCovered, "Departments skipped", notCovered? "Someone didn't get to these":"Nothing skipped", notCovered>0);
+}
+function tile(v,label,sub,alert){
+  return '<div class="kpi'+(alert?" alert":"")+'"><b>'+esc(v)+'</b><span>'+esc(label)+'</span>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</div>';
+}
+function byRoute(es){
+  var c={};
+  es.filter(function(e){return e.Type==="Issue"}).forEach(function(e){ var r=e["Route to"]||"unrouted"; c[r]=(c[r]||0)+1; });
+  var parts=Object.keys(c).map(function(k){return c[k]+" "+k});
+  return parts.join(" · ") || "none";
+}
+
+function renderBars(es){
+  var c={};
+  es.filter(function(e){return e.Type==="Issue"||e.Type==="Concern"}).forEach(function(e){ c[e.Department]=(c[e.Department]||0)+1; });
+  var rows=Object.keys(c).map(function(k){return {k:k,v:c[k]}}).sort(function(a,b){return b.v-a.v}).slice(0,12);
+  if(!rows.length){ $("#bars").innerHTML='<p class="empty">No issues or concerns in this window. That is the good outcome.</p>'; return; }
+  var max=rows[0].v;
+  $("#bars").innerHTML = rows.map(function(r){
+    var step=SEQ[Math.min(SEQ.length-1, Math.floor((r.v/max)*(SEQ.length-1)+0.0001))];
+    return '<div class="brow"><div class="lab" title="'+esc(r.k)+'">'+esc(r.k)+'</div>'+
+      '<div class="track"><i style="width:'+Math.max(2,(r.v/max)*100)+'%;background:var('+step+')"></i></div>'+
+      '<div class="val">'+r.v+'</div></div>';
+  }).join("");
+}
+
+function renderRepeats(es){
+  var c={};
+  es.forEach(function(e){
+    if(e.Type==="Win") return;
+    var k=(e.Store||"")+"||"+e.Department+"||"+e.Type;
+    (c[k]=c[k]||{n:0,dates:{},sample:""}).n++;
+    c[k].dates[e.Date]=1;
+    if(!c[k].sample) c[k].sample=e.Detail;
+  });
+  var rows=Object.keys(c).filter(function(k){return c[k].n>=3})
+    .map(function(k){var p=k.split("||");return {store:p[0],dept:p[1],type:p[2],n:c[k].n,days:Object.keys(c[k].dates).length,sample:c[k].sample}})
+    .sort(function(a,b){return b.n-a.n});
+  $("#repeatcard").classList.toggle("hidden", !rows.length);
+  $("#repeats").innerHTML = rows.map(function(r){
+    return '<div class="repeat"><span class="rn">'+r.n+'×</span><div><b>'+esc(r.dept)+'</b>'+(r.store?' at '+esc(r.store):'')+' — '+esc(r.type).toLowerCase()+
+      ', on '+r.days+' different day'+(r.days===1?"":"s")+'<br><span style="color:var(--ink-2)">Most recent: '+esc(String(r.sample).slice(0,150))+'</span></div></div>';
+  }).join("");
+}
+
+function renderFeed(es){
+  if(!es.length){ $("#feed").innerHTML='<p class="empty">Nothing matches those filters.</p>'; return; }
+  var days=[], seen={};
+  es.forEach(function(e){ if(!seen[e.Date]){seen[e.Date]=[];days.push(e.Date)} seen[e.Date].push(e); });
+  $("#feed").innerHTML = days.map(function(d){
+    return '<div class="day"><h3>'+esc(prettyDay(d))+'</h3>'+ seen[d].map(function(e){
+      return '<div class="ent '+typeClass(e.Type)+'">'+
+        '<div class="top"><span class="tag">'+esc(e.Type)+'</span>'+
+        '<span class="dept">'+esc(e.Department)+'</span>'+
+        (e["Route to"]?'<span class="route">→ '+esc(e["Route to"])+'</span>':'')+
+        '<span class="meta">'+(e.Store?esc(e.Store)+' · ':'')+esc(e.Shift)+(e.Manager?' · '+esc(e.Manager):'')+'</span></div>'+
+        '<p>'+esc(e.Detail)+'</p></div>';
+    }).join("")+'</div>';
+  }).join("");
+}
+
+function renderCoverage(ss){
+  if(!ss.length){ $("#coverage").innerHTML='<p class="empty">No shifts submitted in this window.</p>'; return; }
+  $("#coverage").innerHTML='<div class="card"><table><thead><tr>'+
+    '<th>Day</th><th>Store</th><th>Shift</th><th>Manager</th><th>Logged</th><th>All good</th><th>Attention</th><th>Skipped</th><th>Issues</th></tr></thead><tbody>'+
+    ss.map(function(s){
+      var logged=+s.Logged||0, tot=+s.Departments||0, skip=+s["Not covered"]||0;
+      var cls = skip? "d-bad" : (logged>=tot? "d-good":"d-warn");
+      return '<tr><td>'+esc(prettyDay(s.Date))+'</td><td>'+esc(s.Store||"—")+'</td><td>'+esc(s.Shift)+'</td><td>'+esc(s.Manager||"—")+'</td>'+
+        '<td class="num"><span class="dot '+cls+'"></span>'+logged+' / '+tot+'</td>'+
+        '<td class="num">'+(+s["All good"]||0)+'</td><td class="num">'+(+s["Needs attention"]||0)+'</td>'+
+        '<td class="num'+(skip?' miss':'')+'">'+skip+'</td><td class="num">'+(+s.Issues||0)+'</td></tr>';
+    }).join("")+'</tbody></table></div>';
+}
+
+function renderReports(ss){
+  if(!ss.length){ $("#reports").innerHTML='<p class="empty">No shifts submitted in this window.</p>'; return; }
+  $("#reports").innerHTML = ss.map(function(s){
+    return '<div class="card"><h2>'+esc(prettyDay(s.Date))+' — '+(s.Store?esc(s.Store)+' — ':'')+esc(s.Shift)+'</h2>'+
+      '<p class="cap">'+esc(s.Manager||"No name")+(s["Day type"]?' · '+esc(s["Day type"]):'')+' · received '+esc(s.Received)+'</p>'+
+      '<details class="full"><summary>Show the full report</summary><pre class="rep">'+esc(s["Full report"])+'</pre></details></div>';
+  }).join("");
+}
+
+/* ---------- csv ---------- */
+$("#csv").addEventListener("click", function(){
+  var rows=[["Date","Store","Shift","Manager","Department","Type","Route to","Detail"]];
+  entries().forEach(function(e){ rows.push([e.Date,e.Store,e.Shift,e.Manager,e.Department,e.Type,e["Route to"],e.Detail]); });
+  var csv=rows.map(function(r){ return r.map(function(c){ return '"'+String(c==null?"":c).replace(/"/g,'""')+'"'; }).join(","); }).join("\n");
+  var b=new Blob([csv],{type:"text/csv;charset=utf-8"}), u=URL.createObjectURL(b);
+  var a=document.createElement("a"); a.href=u; a.download="manager-log-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a); a.click(); setTimeout(function(){a.remove();URL.revokeObjectURL(u)},400);
+});
+
+/* ---------- boot ---------- */
+(function(){
+  var saved=null; try{ saved=sessionStorage.getItem("mgr-pass"); }catch(e){}
+  if(saved){ $("#pass").value=saved; unlock(); }
+})();
+</script>
+</body>
+</html>
