@@ -698,7 +698,7 @@ function deptHTML(d,bi,di){
       <span class="caret"></span>
     </button>
     <div class="dept-body${open?"":" hidden"}">
-      ${guideCount?`<details class="guide"><summary>What to look at <b>(${guideCount})</b></summary><ul>${guide}</ul></details>`:""}
+      ${guideCount?`<details class="guide" open><summary>What to look at <b>(${guideCount})</b></summary><ul>${guide}</ul></details>`:""}
       <div class="statusrow">
         ${Object.keys(STATUS).map(k=>`<button class="st st-${k}${r.s===k?" on":""}" data-status="${id}:${k}">${STATUS[k].label}</button>`).join("")}
       </div>
