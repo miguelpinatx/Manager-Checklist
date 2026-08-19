@@ -734,19 +734,24 @@ function wireApp(){
     if(!t) return;
 
     if(t.dataset.open){
-      const id=t.dataset.open, card=t.closest(".dept");
-      const nowOpen=!card.classList.contains("open");
-      card.classList.toggle("open",nowOpen);
-      $(".dept-body",card).classList.toggle("hidden",!nowOpen);
-      S.open[id]=nowOpen; save(); return;
+      const id=t.dataset.open;
+      const nowOpen = S.open[id]!==true;
+      Object.keys(S.open).forEach(k=> S.open[k]=false);   // only one department open at a time
+      S.open[id]=nowOpen; save();
+      paintOpen();
+      if(nowOpen) scrollDeptIntoView(id);
+      return;
     }
     if(t.dataset.status){
       const [id,k]=t.dataset.status.split(":"); const r=drec(id);
-      r.s = (r.s===k? null : k); save();
+      r.s = (r.s===k? null : k);
       const card=t.closest(".dept");
       $$(".st",card).forEach(b=> b.classList.toggle("on", b.dataset.status===id+":"+r.s));
       card.classList.toggle("has-status", !!r.s);
-      refresh(); return;
+      // logged and nothing written here yet -> fold it away and move on
+      const typing = (r.e||[]).some(x=>(x.x||"").trim());
+      if(r.s && !typing){ S.open[id]=false; }
+      save(); paintOpen(); refresh(); return;
     }
     if(t.dataset.add){
       const [id,type]=t.dataset.add.split(":"); const r=drec(id);
@@ -785,6 +790,23 @@ function wireApp(){
       const en=(drec(id).e||[]).find(x=>String(x.i)===i);
       if(en){ en.r=el.value; save(); }
     }
+  });
+}
+
+function paintOpen(){
+  $$(".dept").forEach(c=>{
+    const on = S.open[c.dataset.dept]===true;
+    c.classList.toggle("open", on);
+    const body=$(".dept-body",c); if(body) body.classList.toggle("hidden", !on);
+  });
+}
+function scrollDeptIntoView(id){
+  const card=$(`[data-dept="${id}"]`); if(!card) return;
+  requestAnimationFrame(()=>{
+    const head=$("#topbar");
+    const offset=(head?head.offsetHeight:0)+8;
+    const y=card.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({top:Math.max(0,y), behavior:"smooth"});
   });
 }
 
@@ -1219,14 +1241,9 @@ function wireChrome(){
 
   $("#summarybtn").addEventListener("click", showSummary);
   $("#collapsebtn").addEventListener("click",()=>{
-    const anyOpen=$$(".dept.open").length>0;
-    $$(".dept").forEach(c=>{
-      c.classList.toggle("open",!anyOpen);
-      $(".dept-body",c).classList.toggle("hidden",anyOpen);
-      S.open[c.dataset.dept]=!anyOpen;
-    });
-    save();
-    if(anyOpen) window.scrollTo({top:0,behavior:"smooth"});
+    Object.keys(S.open).forEach(k=> S.open[k]=false);
+    save(); paintOpen();
+    window.scrollTo({top:0,behavior:"smooth"});
   });
 }
 
