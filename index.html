@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
+<meta name="theme-color" content="#f6f5f2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Manager Log">
+<title>Manager Daily Log</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231f6b45'/><path d='M30 34h40M30 50h40M30 66h26' stroke='white' stroke-width='9' stroke-linecap='round'/></svg>">
+<style>:root{
+  --bg:#f6f5f2; --card:#fff; --ink:#1c1f1d; --ink-2:#5b625d; --ink-3:#8b918d; --line:#e3e1db;
+  --green:#1f6b45; --green-soft:#e8f2ec;
+  --amber:#a8630f; --amber-soft:#fdf1de;
+  --red:#a4322a; --red-soft:#fbeceb;
+  --blue:#25567f; --blue-soft:#e9f0f6;
+  --plum:#6b4a7a; --plum-soft:#f2ecf5;
+  --clay:#7a4a12; --clay-soft:#f6eede;
+  --radius:14px; --shadow:0 1px 2px rgba(28,31,29,.05),0 4px 14px rgba(28,31,29,.045); --tap:44px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;padding-bottom:118px;-webkit-text-size-adjust:100%}
+button,select,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.hidden{display:none !important}
+.wrap{max-width:840px;margin:0 auto;padding:0 14px}
+@media(min-width:840px){.wrap{padding:0 20px}}
+
+/* header */
+header.top{position:sticky;top:0;z-index:50;background:rgba(246,245,242,.94);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
+.top-row{display:flex;align-items:center;gap:12px;padding:10px 0}
+.brand{font-weight:700;letter-spacing:-.01em;font-size:15px;line-height:1.25;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{display:block;font-weight:500;color:var(--ink-2);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{display:flex;gap:6px;flex-shrink:0}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 13px;font-size:13px;font-weight:600;color:var(--ink-2);min-height:38px;display:inline-flex;align-items:center;white-space:nowrap}
+.chip:active{transform:scale(.97)}
+.progress-wrap{padding-bottom:10px}
+.bar{height:7px;background:#e3e1db;border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--green);border-radius:99px;transition:width .25s}
+.bar-label{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-variant-numeric:tabular-nums}
+.bar-label b{color:var(--ink);font-weight:700}
+.queue{display:block;text-align:center;font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-soft);border-radius:8px;padding:5px;margin-bottom:8px}
+
+/* setup */
+.setup{padding:26px 0 40px}
+.setup h1{font-size:26px;line-height:1.15;letter-spacing:-.02em;margin:0 0 6px}
+.setup p.sub{color:var(--ink-2);margin:0 0 24px;font-size:15px}
+.field{margin-bottom:20px}
+.field>label{display:block;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+.field input[type=text]{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);min-height:var(--tap)}
+.field input[type=text]:focus{outline:2px solid var(--green);outline-offset:-1px;border-color:transparent}
+.shift-grid{display:grid;gap:10px}
+.shift-btn{text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:var(--radius);padding:15px 16px;display:flex;align-items:center;gap:13px;box-shadow:var(--shadow)}
+.shift-btn.on{border-color:var(--green);background:var(--green-soft)}
+.shift-btn .dot{width:11px;height:11px;border-radius:99px;border:2px solid var(--ink-3);flex-shrink:0}
+.shift-btn.on .dot{border-color:var(--green);background:var(--green);box-shadow:inset 0 0 0 2px #fff}
+.shift-btn .nm{font-weight:650;letter-spacing:-.01em}
+.shift-btn .wd{font-size:13px;color:var(--ink-2)}
+.toggle-row{display:flex;gap:9px;flex-wrap:wrap}
+.toggle{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:10px 16px;font-size:14px;font-weight:600;color:var(--ink-2);min-height:var(--tap)}
+.toggle.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.hint{font-size:13px;color:var(--ink-3);margin-top:8px;line-height:1.45}
+.primary{width:100%;background:var(--green);color:#fff;border-radius:13px;padding:16px;font-weight:700;font-size:16px;min-height:52px;box-shadow:var(--shadow);text-align:center}
+.primary.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+
+/* blocks */
+.block{margin:22px 0 0}
+.block>h2{font-size:12.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--green);margin:0 0 9px;padding:0 2px;display:flex;align-items:center;gap:9px}
+.block>h2::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* department card */
+.dept{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:11px;box-shadow:var(--shadow);overflow:hidden}
+.dept-head{display:flex;align-items:center;gap:10px;padding:14px 15px;width:100%;text-align:left;min-height:60px}
+.dept-head .nm{font-weight:700;letter-spacing:-.01em;flex:1;min-width:0;font-size:16px}
+.dept-head .mins{font-size:12px;color:var(--ink-3);font-weight:600;flex-shrink:0}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:5px 10px;flex-shrink:0;white-space:nowrap}
+.pill.s-none{background:#f1efe9;color:var(--ink-3)}
+.pill.s-good{background:var(--green-soft);color:var(--green)}
+.pill.s-attn{background:var(--amber-soft);color:var(--amber)}
+.pill.s-skip{background:var(--red-soft);color:var(--red)}
+.caret{width:10px;height:10px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(45deg);transition:transform .2s;flex-shrink:0;margin-top:-4px}
+.dept.open .caret{transform:rotate(-135deg);margin-top:2px}
+.dept-body{border-top:1px solid var(--line);padding:13px 15px 15px}
+
+/* guide */
+.guide{border:1px solid var(--line);border-radius:11px;background:#faf9f6;margin-bottom:13px;overflow:hidden}
+.guide summary{list-style:none;cursor:pointer;padding:11px 13px;font-size:13px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px;min-height:42px}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(45deg);margin-left:auto;margin-top:-3px;transition:transform .2s}
+.guide[open] summary::after{transform:rotate(-135deg);margin-top:2px}
+.guide summary b{color:var(--ink-3);font-weight:700}
+.guide ul{margin:0;padding:2px 15px 13px 30px;color:var(--ink-2);font-size:14px;line-height:1.5}
+.guide li{margin:3px 0}
+.guide li.gh{list-style:none;margin-left:-16px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding-top:9px}
+
+/* status */
+.statusrow{display:flex;gap:7px;margin-bottom:13px}
+.st{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 6px;font-size:13px;font-weight:700;color:var(--ink-2);min-height:46px;line-height:1.2}
+.st.on.st-good{background:var(--green);border-color:var(--green);color:#fff}
+.st.on.st-attn{background:var(--amber);border-color:var(--amber);color:#fff}
+.st.on.st-skip{background:var(--red);border-color:var(--red);color:#fff}
+
+/* prompts */
+.prompts{background:var(--blue-soft);border-radius:11px;padding:11px 13px;margin-bottom:13px}
+.prompts>span{display:block;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--blue);margin-bottom:5px}
+.prompts ul{margin:0;padding-left:17px;font-size:13.5px;line-height:1.5;color:#2f4d68}
+.prompts li{margin:2px 0}
+
+/* entries */
+.entry{border:1px solid var(--line);border-left:4px solid var(--ink-3);border-radius:11px;padding:10px;margin-bottom:9px;background:#fff}
+.entry-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.etype{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.entry .route{flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:8px 9px;background:#fff;font-size:13px;min-height:38px}
+.entry .del{width:34px;height:34px;border-radius:9px;font-size:19px;color:var(--ink-3);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.entry textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;resize:vertical;min-height:70px;font-size:15px;line-height:1.4;background:#fff}
+.entry textarea:focus{outline:2px solid var(--green);outline-offset:-1px;border-color:transparent}
+.e-issue{border-left-color:var(--red)} .e-issue .etype{background:var(--red-soft);color:var(--red)}
+.e-concern{border-left-color:var(--amber)} .e-concern .etype{background:var(--amber-soft);color:var(--amber)}
+.e-win{border-left-color:var(--green)} .e-win .etype{background:var(--green-soft);color:var(--green)}
+.e-product{border-left-color:var(--clay)} .e-product .etype{background:var(--clay-soft);color:var(--clay)}
+.e-staffing{border-left-color:var(--plum)} .e-staffing .etype{background:var(--plum-soft);color:var(--plum)}
+
+/* add row */
+.addrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}
+.add{border:1.5px dashed #cfccc3;background:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;color:var(--ink-2);min-height:40px}
+.add:active{transform:scale(.97)}
+.a-issue{color:var(--red);border-color:#e3c4c1}
+.a-concern{color:var(--amber);border-color:#e8d3b2}
+.a-win{color:var(--green);border-color:#bcd6c8}
+.a-product{color:var(--clay);border-color:#dfcfae}
+.a-staffing{color:var(--plum);border-color:#d5c6dd}
+
+/* footer */
+.footbar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:10px 0 max(10px,env(safe-area-inset-bottom))}
+.footbar .wrap{display:flex;gap:9px}
+.footbar button{flex:1;border-radius:12px;padding:14px 10px;font-weight:700;font-size:14.5px;min-height:50px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.footbar button.go{background:var(--green);color:#fff;border-color:var(--green);flex:1.5}
+
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:100;background:rgba(28,31,29,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet-in{background:var(--bg);width:100%;max-width:840px;max-height:92vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden}
+@media(min-width:840px){.sheet{align-items:center}.sheet-in{border-radius:20px;max-height:86vh}}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+.sheet-head h3{margin:0;font-size:17px;flex:1;letter-spacing:-.01em}
+.sheet-body{overflow:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}
+.sheet-body p{margin-top:0;font-size:14.5px;color:var(--ink-2);line-height:1.5}
+.sheet-foot{padding:12px 16px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);display:flex;gap:9px;background:#fff}
+.sheet-foot button{flex:1;border-radius:12px;padding:14px 8px;font-weight:700;min-height:50px;border:1px solid var(--line);background:#fff;font-size:14.5px}
+.sheet-foot button.go{background:var(--green);color:#fff;border-color:var(--green);flex:1.3}
+.sheet-foot button:disabled{opacity:.6}
+.x{width:34px;height:34px;border-radius:99px;background:#eceae4;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--ink-2);line-height:1}
+pre.report{white-space:pre-wrap;word-wrap:break-word;font:11.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:0}
+@media(min-width:560px){pre.report{font-size:13px}}
+.sent{font-size:12.5px;color:var(--green);font-weight:600;margin:-4px 0 12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.stat b{display:block;font-size:21px;line-height:1.1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.stat.issue b{color:var(--red)} .stat.win b{color:var(--green)}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);z-index:200;background:var(--ink);color:#fff;padding:11px 18px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 22px rgba(0,0,0,.22);max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media print{
+  header.top,.footbar,.addrow,.statusrow,.chip{display:none!important}
+  body{background:#fff;padding:0}
+  .dept-body{display:block!important}
+  .dept{break-inside:avoid;box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<header class="top hidden" id="topbar">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand" id="brandline"></div>
+      <div class="top-actions">
+        <button class="chip" id="daybtn">Day type</button>
+        <button class="chip" id="menubtn" aria-label="Menu">•••</button>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <span class="queue hidden" id="queuechip"></span>
+      <div class="bar-label"><span id="pctnum"></span><span id="pctright"></span></div>
+      <div class="bar"><i id="barfill"></i></div>
+    </div>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<div class="footbar hidden" id="footbar">
+  <div class="wrap">
+    <button id="collapsebtn">Collapse all</button>
+    <button class="go" id="summarybtn">Review &amp; send</button>
+  </div>
+</div>
+
+<script>/* ===== SHIFT GUIDE CONTENT =====
+   guide[] lines: "text" = a standard to look at; {h:"text"} = sub-heading;
+   any line may carry tag:"order" | "delivery" | "tue" to show only on those days.
+   report[] = what this department should be reported on.  */
+const DATA = [
+{
+  id:"opening", name:"Opening Manager", short:"Opening", window:"5:30am – 1:00pm",
+  blocks:[
+    { time:"Before opening", depts:[
+      { name:"Store walk",
+        guide:["Review closing shift notes", {h:"Check condition of store"}, "Trash", "Floors", "Office space", "Restrooms clean", "Cash registers", {h:"Coolers & freezers"}, "Walk through coolers/freezers", "Confirm proper temperatures"],
+        report:["Anything the closing manager flagged", "Any cooler or freezer reading out of range"] },
+    ]},
+    { time:"6:30am – 8:30am", depts:[
+      { name:"Bakery",
+        guide:["ALL dept 5 min huddle — hygiene, uniform, staffing", "Supervisor only 15 min huddle", {h:"On order day — inventory & EPPF/Affiliated orders", tag:"order"}, {t:"Confirm inventory was taken and properly rotated/organized", tag:"order"}, {t:"Orders are placed properly and on time", tag:"order"}, {h:"Daily"}, "Review production plan — submit how much of what products", "Reminder to remove expired products & account for waste", {h:"Walk department"}, "Confirm closing shift cleaning met standards", "Display case clean and fully stocked to required set by opening time", "Check quality of commissary frozen products (empanadas, muffins, etc.)", "Confirm sell-by dates correct on commissary products (loaves, muffin tops, cookies) and in display case", "Check day old bread is updated"],
+        report:["Staffing, uniform and hygiene from the huddle", "What the supervisor raised and what you assigned", "Production plan submitted", "Quality of commissary product", "Incorrect orders, inventory and waste"] },
+      { name:"Deli",
+        guide:["ALL dept 5 min huddle — hygiene, uniform, staffing", "Supervisor only 15 min huddle", {h:"On order day — inventory & EPPF/Affiliated orders", tag:"order"}, {t:"Confirm inventory was taken and properly rotated/organized (FIFO)", tag:"order"}, {t:"Orders are placed properly and on time", tag:"order"}, {h:"Daily"}, "Review production plan — submit how much of what products", "Reminder to remove expired products & account for waste", {h:"Walk department"}, "Confirm closing shift cleaning met standards", "Food properly covered in coolers", "Check quality of commissary products", "Confirm burrito station is clean and ready for opening"],
+        report:["Staffing, uniform and hygiene from the huddle", "What the supervisor raised and what you assigned", "Production plan submitted", "Quality of commissary product", "Leftovers from yesterday, incorrect orders, inventory and waste"] },
+      { name:"Additional items",
+        guide:["Parking lot clean", "Store entrances clean, welcoming, fans on", "Shopping carts clean and available", "Receiving area cleaned"],
+        report:[] },
+    ]},
+    { time:"8:30am – 11:00am", depts:[
+      { name:"Produce", mins:35,
+        guide:["Supervisor only 20 min huddle", {h:"Order day", tag:"order"}, {t:"Confirm correct order sheet", tag:"order"}, {t:"Inventory check — organization, waste, excess product, quality", tag:"order"}, {h:"Delivery day", tag:"delivery"}, {t:"Confirm shortages if any and quality of product", tag:"delivery"}, {t:"Ensure proper inventory and stocking rotation (FIFO)", tag:"delivery"}, {h:"Every day — department walkthrough"}, "Carts, floors, and displays are clean", "Product rotated properly and quality meets standards", "Avocado, banana, jalapeño, tomato are all filled", "Warehouse area clean, organized, cleared of personal items", {h:"Tuesday", tag:"tue"}, {t:"Confirm price changes are updated", tag:"tue"}],
+        report:["What the supervisor raised and what you assigned", "Shortages or quality problems on today's delivery", "Product quality, ordering and waste"] },
+      { name:"Meat Market", mins:35,
+        guide:["ALL dept 5 min huddle — hygiene, uniform, staffing", "Supervisor only 20 min huddle", {h:"Order day", tag:"order"}, {t:"Confirm correct order sheet", tag:"order"}, {t:"Inventory check — organization, waste, excess product, quality", tag:"order"}, {h:"Delivery day", tag:"delivery"}, {t:"Confirm shortages if any and quality of product", tag:"delivery"}, {t:"Ensure proper inventory and stocking rotation (FIFO)", tag:"delivery"}, {h:"Every day"}, "Review production plan — how much of what products", "Reminder to remove expired products & account for waste", {h:"Department walkthrough"}, "Confirm closing shift cleaning met standards", "Trimmings do not have excessive waste", "Meat cases stocked, clean, and presentable", "Ground beef, caldillo, loin tip, and muenster cheese are filled", "Proper cleaning supplies to eliminate cross contamination", "Meat market pricing counter / open case"],
+        report:["Staffing, uniform and hygiene from the huddle", "What the supervisor raised and what you assigned", "Shortages or quality problems on today's delivery", "Production plan submitted", "Product quality, ordering and waste"] },
+    ]},
+    { time:"11:30am – 1:00pm", depts:[
+      { name:"Pricing", mins:45,
+        guide:["Checking pending batches for pricing", "Weekly ad items ringing correctly", "Beer and wine pricing", "End cap pricing", "Large display pricing"],
+        report:["Pricing errors — item, shelf price vs. what it rings"] },
+      { name:"Customer Service", mins:30,
+        guide:[{h:"Confirm the following"}, "Lines moving quickly at registers", "Employees visible, assisting, greeting and thanking customers", "Departments are clean and organized", "Uniform, gloves, and hairnets used in all departments"],
+        report:["Customer feedback or complaints you heard"] },
+    ]},
+  ]
+},
+{
+  id:"second", name:"Second Shift Manager", short:"Second", window:"7:00am – 2:30pm",
+  blocks:[
+    { time:"7:00am – 8:30am", depts:[
+      { name:"Admin work",
+        guide:["Sales report", "Purchases"],
+        report:["Sales against expectation", "Purchases"] },
+      { name:"Front End",
+        guide:["Registers are clean", "Redirect unused cashiers to cleaning, restocking, and rotation when lines are under control"],
+        report:[] },
+      { name:"Tortilla Production",
+        guide:["Started and stocked", "Flour & street taco tortillas available"],
+        report:[] },
+      { name:"Receiving",
+        guide:["Area cleaned", "Waste being tracked correctly", "Orders arriving on time", "Cold/frozen items taken to cooler/freezer first"],
+        report:["Waste totals and any tracking problems", "Late or missing deliveries"] },
+    ]},
+    { time:"8:30am – 10:30am", depts:[
+      { name:"Stockers",
+        guide:[{h:"Delivery day", tag:"delivery"}, {t:"Back stock is being pulled first before filling shelves", tag:"delivery"}, {t:"Cases are placed in each aisle on the same side", tag:"delivery"}, {t:"Properly checking expiration dates, facing, and rotating", tag:"delivery"}, {h:"Every day"}, "Properly checking expiration dates, facing, and rotating", "Back stock properly organized by aisle", "Coolers/freezers are organized"],
+        report:[] },
+      { name:"Vista Products",
+        guide:["Tostadas", "Chicharrón", "Salsas", "Popcorn", "Biscochos & alfajores"],
+        report:["Vista product gaps or quality"] },
+      { name:"Cold Deli",
+        guide:["ALL dept 5 min huddle — hygiene, uniform, staffing", "Supervisor only 20 min huddle", {h:"Order day", tag:"order"}, {t:"Inventory check — organization, waste, excess product, quality", tag:"order"}, {h:"Delivery day", tag:"delivery"}, {t:"Confirm shortages if any and quality of product", tag:"delivery"}, {t:"Ensure proper inventory and stocking rotation (FIFO)", tag:"delivery"}, {h:"Every day"}, "Review production plan — how much of what products", "Reminder to remove expired products & account for waste", "Ask them to document fruit collected from produce and products pulled from shelves", "Have them report their documentation", {h:"Department walkthrough"}, "Confirm closing shift cleaning met standards", "Food properly covered in coolers", "Cases stocked, clean, and presentable", "Proper cleaning supplies to eliminate cross contamination"],
+        report:["Staffing, uniform and hygiene from the huddle", "What the supervisor raised and what you assigned", "Shortages or quality problems on today's delivery", "Production plan submitted", "Fruit collected from produce and product pulled from shelves", "Product quality, waste and organization"] },
+    ]},
+    { time:"10:30am – 12:30pm", depts:[
+      { name:"Cake Department", mins:35,
+        guide:["ALL dept 5 min huddle — hygiene, uniform, staffing", "Supervisor only 20 min huddle", {h:"Order day", tag:"order"}, {t:"Confirm tablet used for inventory and ordering properly", tag:"order"}, {t:"Inventory check — organization, waste, excess, quality (freezer and cooler)", tag:"order"}, {h:"Delivery day", tag:"delivery"}, {t:"Confirm shortages if any and quality of product", tag:"delivery"}, {t:"Ensure proper inventory and stocking rotation (FIFO)", tag:"delivery"}, {h:"Every day"}, "Review production plan — how much of what products", "Reminder to remove expired products & account for waste", "Ask them to document high volume waste items so we can adjust set as needed", "Submit items", {h:"Department walkthrough"}, "Confirm closing shift cleaning met standards", "Boxes of frozen product organized, proper rotation when pulling items", "Display cases stocked, clean, and presentable", "Proper cleaning supplies to eliminate cross contamination"],
+        report:["Staffing, uniform and hygiene from the huddle", "What the supervisor raised and what you assigned", "Shortages or quality problems on today's delivery", "Production plan submitted", "High-volume waste items — should the set be adjusted?", "Product quality and how the department is organized"] },
+      { name:"Expiration & Rotation",
+        guide:["Check dairy expiration dates — should only have ONE expiration date", "Check meat market packaged meats", "Check cold meals & salads dates and rotations", "Note items with frequent waste", "Check lunch meat dates and rotations", "Check cake department dates and quality", "Check grocery designated daily rotation items"],
+        report:["Any product carrying more than one expiration date", "Items with frequent waste", "Expired or short-dated product pulled today"] },
+    ]},
+    { time:"12:30pm – 2:30pm", depts:[
+      { name:"High Demand Items",
+        guide:[{h:"Confirm available during peak hours (1pm – 4pm)"}, "Chile con queso", "Brisket", "Rotisserie chicken", "Carnitas", "Frijoles", "Guacamole", "Salsas", "Milk", "Eggs", "Beer", "Tortilla", "Chicharrón", "Tres leches cakes"],
+        report:["Anything that ran out or ran short, and roughly what time"] },
+    ]},
+  ]
+},
+{
+  id:"closing", name:"Closing Manager", short:"Closing", window:"3:00pm – 9:00pm",
+  blocks:[
+    { time:"3:00pm – 5:00pm", depts:[
+      { name:"Admin work",
+        guide:["Sales report", "Purchases"],
+        report:["Sales against expectation", "Purchases"] },
+      { name:"Front End",
+        guide:["Registers are clean", "Redirect unused cashiers to cleaning, restocking, and rotation when lines are under control", "Registers cleaned and organized", "Observe customer service — customers assisted through closing"],
+        report:[] },
+      { name:"Receiving / Warehouse / Stockers",
+        guide:["Coolers organized and clean", "Freezers organized and clean", "Waste being tracked correctly", "Orders arriving on time", "Cold/frozen items taken to cooler/freezer first", "Commissary items taken to appropriate department", "No blocked walkways and breakers"],
+        report:["Waste totals and any tracking problems", "Late or missing deliveries"] },
+    ]},
+    { time:"5:00pm – 7:00pm", depts:[
+      { name:"Hot Deli",
+        guide:["Check quality of food in burrito station", {h:"Check warmers for top items"}, "Chile con queso", "Brisket", "Beans", "Carnitas", "Employees greeting and thanking customers appropriately", "Final burrito station & warmer fills done at 6pm", "Hot deli case cleaned, faced, and rotated"],
+        report:["Food quality in the burrito station"] },
+      { name:"Cold Deli",
+        guide:["Check for expired products", "Confirm expired items are not being over produced", "Agua fresca station is clean", "Remind employees to properly clean containers for aguas frescas", "Cold deli case cleaned, faced, and rotated"],
+        report:["Expired product found", "Items being over-produced"] },
+    ]},
+    { time:"7:00pm – 9:00pm", depts:[
+      { name:"Bakery",
+        guide:["Case cleaned, faced, and rotated", "Day old bread packaged at closing", "No leftover product / floors cleaned", "Trash is emptied", "Supplies organized"],
+        report:[] },
+      { name:"Tortillería",
+        guide:["Cleaned and stocked", "Check department for proper cleaning", "No leftover product / floors cleaned", "Trash is emptied", "Supplies organized"],
+        report:[] },
+      { name:"Grocery",
+        guide:["Aisles, dairy, lunch meat, frozen, and beer coolers all faced"],
+        report:[] },
+      { name:"Cakes",
+        guide:["Case cleaned, faced, and rotated", "Check department for proper cleaning", "No leftover product / floors cleaned", "Trash is emptied", "Supplies organized"],
+        report:[] },
+      { name:"Meat Market",
+        guide:["Check department for proper cleaning", "No leftover product / floors cleaned", "Trash is emptied", "Supplies organized", "Equipment cleaned"],
+        report:[] },
+      { name:"Store closing",
+        guide:["Floors cleaned", "Trash removed", "Restrooms cleaned", "Stoves off", "Registers cleaned / trash removed", "Safe is closed", "Department lights off", "All doors closed"],
+        report:["Anything tomorrow's opening manager needs to know"] },
+    ]},
+  ]
+},
+];</script>
+<script>/* =========================================================
+   SETUP — two things to fill in, then you're done.
+
+   1. endpoint : the Google Apps Script web app address,
+                 the one that ends in /exec.
+   2. stores   : one line per store. Keep the id short,
+                 lowercase, no spaces — it's what goes in
+                 each store's link, e.g.  ?store=alameda
+
+   Give each store its own link:
+       https://you.github.io/manager-log/?store=alameda
+       https://you.github.io/manager-log/?store=zaragoza
+   Managers then never have to pick a store, and there is
+   no way to log against the wrong one.
+   ========================================================= */
+const CONFIG = {
+  endpoint: "https://script.google.com/macros/s/AKfycbwijs3yoqt7cRnzqGC2024sDKDUpOHhAQAph9A5bjY-Vsq9KUvOKPmYNA2W7lPvor-v/exec",
+  stores: [
+    { id: "central", name: "Central" },
+    { id: "alameda", name: "Alameda" },
+    { id: "horizon", name: "Horizon" },
+    { id: "urban", name: "Urban" },
+    { id: "doniphan", name: "Doniphan" },
+    { id: "piedras", name: "Piedras" },
+    { id: "montana", name: "Montana" }
+  ]
+};
+
+/* ================= constants ================= */
+const KEY="mgr-v3", HKEY="mgr-history-v3", OKEY="mgr-outbox-v3", CKEY="mgr-config-v3", SKEY="mgr-store-v3";
+const RETAIN_DAYS = 15;
+const ROUTES = ["Higher Management","HR","Commissary","Maintenance"];
+const TYPES = {
+  issue:   {label:"Issue",           short:"Issue",    routed:true,  hint:"What's wrong, how bad, and what you need."},
+  concern: {label:"Concern",         short:"Concern",  routed:true,  hint:"Not a problem yet, but trending the wrong way."},
+  win:     {label:"Win",             short:"Win",      routed:false, hint:"What went well — and who deserves the credit."},
+  product: {label:"Product & waste", short:"Product",  routed:true,  hint:"Ran out, thrown away, over-produced, order needs adjusting."},
+  staffing:{label:"Staffing",        short:"Staffing", routed:true,  hint:"Call-outs, coverage, coaching given, uniform and hygiene."}
+};
+const TYPE_ORDER = ["issue","concern","product","staffing","win"];
+const STATUS = {
+  good:{label:"All good",           short:"All good"},
+  attn:{label:"Needs attention",    short:"Attention"},
+  skip:{label:"Didn't get to it",   short:"Not covered"}
+};
+
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function todayKey(d){d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function prettyDate(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});}
+function shortDate(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});}
+function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/864e5);}
+
+/* ================= config ================= */
+let CFG = Object.assign({}, CONFIG);
+try{
+  const c=JSON.parse(localStorage.getItem(CKEY)||"null");
+  if(c && c.endpoint) CFG.endpoint=c.endpoint;   // only the link is remembered per device
+}catch(e){}
+function saveCfg(){ try{ localStorage.setItem(CKEY, JSON.stringify({endpoint:CFG.endpoint})); }catch(e){} }
+
+/* ---- which store is this? URL first, then whatever this device chose before ---- */
+let STORE = null;
+function stores(){ return (CFG.stores||[]).filter(function(s){return s && s.id && s.name}); }
+function storeFromUrl(){
+  try{
+    var q=new URLSearchParams(location.search).get("store");
+    if(!q) return null;
+    var k=q.trim().toLowerCase();
+    return stores().find(function(s){ return s.id.toLowerCase()===k || s.name.toLowerCase()===k; }) || null;
+  }catch(e){ return null; }
+}
+function setStore(st){
+  STORE=st;
+  try{ st ? localStorage.setItem(SKEY, JSON.stringify(st)) : localStorage.removeItem(SKEY); }catch(e){}
+}
+function resolveStore(){
+  var u=storeFromUrl();
+  if(u){ setStore(u); return; }
+  // the link named a store we don't recognise (typo?) — ask, never silently reuse the last one
+  var raw=null; try{ raw=new URLSearchParams(location.search).get("store"); }catch(e){}
+  if(raw && raw.trim()){ STORE=null; return; }
+  var saved=null; try{ saved=JSON.parse(localStorage.getItem(SKEY)||"null"); }catch(e){}
+  if(saved && stores().some(function(s){return s.id===saved.id})){ STORE=saved; return; }
+  if(stores().length===1){ setStore(stores()[0]); return; }
+  STORE=null;
+}
+resolveStore();
+
+/* ================= wrap-up section ================= */
+const WRAPUP = {
+  name:"Shift wrap-up", wrap:true,
+  guide:[
+    "Anything that needs a decision from higher management",
+    "Anything HR needs to know — call-outs, conduct, hours, coaching",
+    "Anything commissary needs — product quality, quantities, sell-by dates",
+    "Repairs or equipment that need scheduling"
+  ],
+  report:["How the shift ran overall","Anything the next manager needs to pick up"]
+};
+DATA.forEach(sh=> sh.blocks.push({ time:"End of shift", depts:[WRAPUP] }));
+
+/* ================= state ================= */
+function blank(){
+  return { v:3, date:todayKey(), shift:null, manager:"", store:STORE?STORE.name:"", storeId:STORE?STORE.id:"",
+           day:{order:false,delivery:false,tue:new Date().getDay()===2},
+           depts:{}, seq:1, submittedAt:null, open:{} };
+}
+let S = blank();
+
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function readHistory(){ try{ return JSON.parse(localStorage.getItem(HKEY)||"[]"); }catch(e){ return []; } }
+function writeHistory(h){ try{ localStorage.setItem(HKEY, JSON.stringify(h)); }catch(e){} }
+
+function pruneHistory(){
+  const t=todayKey();
+  const h = readHistory().filter(e=> daysBetween(e.date,t) < RETAIN_DAYS);
+  writeHistory(h);
+  return h;
+}
+
+function archive(old){
+  if(!old||!old.shift) return;
+  if(!Object.keys(old.depts||{}).length) return;
+  const h = readHistory().filter(e=> !(e.date===old.date && e.shift===old.shift));
+  h.unshift({ date:old.date, shift:old.shift, manager:old.manager, submittedAt:old.submittedAt||null, report:buildReport(old) });
+  writeHistory(h);
+  pruneHistory();
+}
+
+function load(){
+  let saved=null;
+  try{ saved = JSON.parse(localStorage.getItem(KEY)||"null"); }catch(e){}
+  pruneHistory();
+  if(!saved || saved.v!==3) return;
+  if(saved.date !== todayKey()){
+    archive(saved);
+    const m=saved.manager; S=blank(); S.manager=m; save(); return;
+  }
+  S = saved;
+  if(!S.open) S.open={};
+  if(STORE && S.storeId && S.storeId!==STORE.id){   // link points at a different store than this saved day
+    archive(S); const m=S.manager; S=blank(); S.manager=m; save(); return;
+  }
+  if(STORE){ S.store=STORE.name; S.storeId=STORE.id; }
+}
+
+/* ================= content helpers ================= */
+function shiftDef(id){ return DATA.find(s=>s.id===id); }
+function tagOK(tag, st){ st=st||S; return !tag || !!st.day[tag]; }
+function deptList(st){
+  st=st||S;
+  const def=shiftDef(st.shift); const out=[];
+  if(!def) return out;
+  def.blocks.forEach((b,bi)=> b.depts.forEach((d,di)=> out.push({d, id:st.shift+"."+bi+"."+di, block:b.time, bi, di})));
+  return out;
+}
+function drec(id){ return S.depts[id] || (S.depts[id] = {s:null, e:[]}); }
+
+function counts(st){
+  st=st||S;
+  let total=0, good=0, attn=0, skip=0, entries=0, issues=0;
+  deptList(st).forEach(({d,id})=>{
+    total++;
+    const r=(st.depts||{})[id]||{};
+    if(r.s==="good") good++; else if(r.s==="attn") attn++; else if(r.s==="skip") skip++;
+    (r.e||[]).forEach(en=>{ if((en.x||"").trim()){ entries++; if(en.t==="issue") issues++; } });
+  });
+  const reported = good+attn+skip;
+  return {total, good, attn, skip, entries, issues, reported, pct: total?Math.round(reported/total*100):0};
+}
+
+/* ================= setup screen ================= */
+function renderSetup(){
+  $("#topbar").classList.add("hidden");
+  $("#footbar").classList.add("hidden");
+  const h = pruneHistory();
+  $("#app").innerHTML = `
+  <div class="wrap setup">
+    <h1>Manager Daily Log</h1>
+    <p class="sub">${prettyDate(S.date)}${STORE?" · "+esc(STORE.name):""}</p>
+
+    ${STORE ? "" : `<div class="field">
+      <label>Which store?</label>
+      <div class="shift-grid" id="storepick">
+        ${stores().map(st=>`<button class="shift-btn" data-store="${esc(st.id)}">
+          <span class="dot"></span><span class="nm">${esc(st.name)}</span>
+        </button>`).join("")}
+      </div>
+      <p class="hint">Ask for your store's own link and this step disappears for good.</p>
+    </div>`}
+
+    <div class="field">
+      <label for="mgr">Manager on duty</label>
+      <input type="text" id="mgr" placeholder="Your name" value="${esc(S.manager)}" autocomplete="name">
+    </div>
+
+    <div class="field">
+      <label>Which shift are you running?</label>
+      <div class="shift-grid" id="shifts">
+        ${DATA.map(s=>`<button class="shift-btn" data-s="${s.id}">
+          <span class="dot"></span>
+          <span><span class="nm">${esc(s.name)}</span><br><span class="wd">${esc(s.window)}</span></span>
+        </button>`).join("")}
+      </div>
+    </div>
+
+    <div class="field">
+      <label>What kind of day is it?</label>
+      <div class="toggle-row" id="daytoggles">
+        <button class="toggle${S.day.order?" on":""}" data-d="order">Order day</button>
+        <button class="toggle${S.day.delivery?" on":""}" data-d="delivery">Delivery day</button>
+        <button class="toggle${S.day.tue?" on":""}" data-d="tue">Price changes</button>
+      </div>
+      <p class="hint">These add the order, delivery and price-change reminders to the departments they apply to.</p>
+    </div>
+
+    <button class="primary" id="start" disabled>${STORE?"Pick a shift to start":"Pick your store to start"}</button>
+    ${h.length?`<button class="primary ghost" id="pastbtn" style="margin-top:10px">Past ${RETAIN_DAYS} days (${h.length})</button>`:""}
+    <p class="hint" style="margin-top:16px">Nothing to tick off — walk the store, and write down what's worth telling somebody. Your work saves itself on this device as you type, and the last ${RETAIN_DAYS} days stay available here.</p>
+  </div>`;
+
+  function gateStart(){
+    const st=$("#start");
+    if(!STORE){ st.disabled=true; st.textContent="Pick your store to start"; return; }
+    if(!S.shift){ st.disabled=true; st.textContent="Pick a shift to start"; return; }
+    st.disabled=false; st.textContent="Start "+shiftDef(S.shift).short.toLowerCase()+" walk";
+  }
+  $$("#storepick .shift-btn").forEach(b=>b.addEventListener("click",()=>{
+    $$("#storepick .shift-btn").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    setStore(stores().find(x=>x.id===b.dataset.store)||null);
+    S.store=STORE?STORE.name:""; S.storeId=STORE?STORE.id:""; save();
+    $(".setup .sub").textContent = prettyDate(S.date)+(STORE?" · "+STORE.name:"");
+    gateStart();
+  }));
+  $("#mgr").addEventListener("input",e=>{S.manager=e.target.value;save();});
+  $$("#shifts .shift-btn").forEach(b=>b.addEventListener("click",()=>{
+    $$("#shifts .shift-btn").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); S.shift=b.dataset.s; save();
+    gateStart();
+  }));
+  $$("#daytoggles .toggle").forEach(b=>b.addEventListener("click",()=>{
+    b.classList.toggle("on"); S.day[b.dataset.d]=b.classList.contains("on"); save();
+  }));
+  $("#start").addEventListener("click",()=>{ if(S.shift && STORE){ save(); renderList(); }});
+  if($("#pastbtn")) $("#pastbtn").addEventListener("click", showHistory);
+  if(S.shift){ const b=$(`#shifts [data-s="${S.shift}"]`); if(b) b.click(); }
+}
+
+/* ================= list ================= */
+function renderList(){
+  const def=shiftDef(S.shift);
+  $("#topbar").classList.remove("hidden");
+  $("#footbar").classList.remove("hidden");
+  $("#brandline").innerHTML = `${STORE?esc(STORE.name)+" · ":""}${esc(def.short)}<small>${prettyDate(S.date)}${S.manager?" · "+esc(S.manager):""}</small>`;
+
+  let html='<div class="wrap">';
+  def.blocks.forEach((b,bi)=>{
+    html += `<section class="block"><h2>${esc(b.time)}</h2>`;
+    b.depts.forEach((d,di)=> html += deptHTML(d,bi,di));
+    html += `</section>`;
+  });
+  html += '<div style="height:6px"></div></div>';
+  $("#app").innerHTML = html;
+  refresh();
+}
+
+function deptHTML(d,bi,di){
+  const id = S.shift+"."+bi+"."+di;
+  const r = S.depts[id]||{s:null,e:[]};
+  const open = S.open[id]===true;
+  const guide = (d.guide||[]).filter(g=> tagOK(typeof g==="string"?null:g.tag))
+    .map(g=> typeof g==="string" ? `<li>${esc(g)}</li>`
+      : g.h ? `<li class="gh">${esc(g.h)}</li>` : `<li>${esc(g.t)}</li>`).join("");
+  const guideCount = (d.guide||[]).filter(g=> tagOK(typeof g==="string"?null:g.tag) && (typeof g==="string"||g.t)).length;
+
+  return `<div class="dept${r.s?" has-status":""}${open?" open":""}" data-dept="${id}">
+    <button class="dept-head" data-open="${id}">
+      <span class="nm">${esc(d.name)}</span>
+      ${d.mins?`<span class="mins">${d.mins} min</span>`:""}
+      <span class="pill s-${r.s||"none"}" data-pill="${id}">${r.s?STATUS[r.s].short:"Not yet"}</span>
+      <span class="caret"></span>
+    </button>
+    <div class="dept-body${open?"":" hidden"}">
+      ${guideCount?`<details class="guide"><summary>What to look at <b>(${guideCount})</b></summary><ul>${guide}</ul></details>`:""}
+
+      <div class="statusrow">
+        ${Object.keys(STATUS).map(k=>`<button class="st st-${k}${r.s===k?" on":""}" data-status="${id}:${k}">${STATUS[k].label}</button>`).join("")}
+      </div>
+
+      ${(d.report||[]).length?`<div class="prompts"><span>Worth reporting on</span><ul>${d.report.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>`:""}
+
+      <div class="entries" data-entries="${id}">${(r.e||[]).map(en=>entryHTML(id,en)).join("")}</div>
+
+      <div class="addrow">
+        ${TYPE_ORDER.map(t=>`<button class="add a-${t}" data-add="${id}:${t}">+ ${esc(TYPES[t].short)}</button>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+function entryHTML(deptId,en){
+  const T=TYPES[en.t];
+  return `<div class="entry e-${en.t}" data-entry="${deptId}:${en.i}">
+    <div class="entry-top">
+      <span class="etype">${esc(T.label)}</span>
+      ${T.routed?`<select class="route" data-route="${deptId}:${en.i}">
+        <option value="">Route to…</option>
+        ${ROUTES.map(rt=>`<option value="${esc(rt)}"${en.r===rt?" selected":""}>${esc(rt)}</option>`).join("")}
+      </select>`:""}
+      <button class="del" data-del="${deptId}:${en.i}" aria-label="Remove">×</button>
+    </div>
+    <textarea data-text="${deptId}:${en.i}" placeholder="${esc(T.hint)}">${esc(en.x||"")}</textarea>
+  </div>`;
+}
+
+/* ================= interactions ================= */
+function wireList(){
+  const app=$("#app");
+
+  app.addEventListener("click", e=>{
+    const t=e.target.closest("[data-open],[data-status],[data-add],[data-del]");
+    if(!t) return;
+
+    if(t.dataset.open){
+      const id=t.dataset.open, card=t.closest(".dept");
+      const nowOpen=!card.classList.contains("open");
+      card.classList.toggle("open",nowOpen);
+      $(".dept-body",card).classList.toggle("hidden",!nowOpen);
+      S.open[id]=nowOpen; save(); return;
+    }
+
+    if(t.dataset.status){
+      const [id,k]=t.dataset.status.split(":");
+      const r=drec(id);
+      r.s = (r.s===k? null : k); save();
+      const card=t.closest(".dept");
+      $$(".st",card).forEach(b=> b.classList.toggle("on", b.dataset.status===id+":"+r.s));
+      card.classList.toggle("has-status", !!r.s);
+      refresh(); return;
+    }
+
+    if(t.dataset.add){
+      const [id,type]=t.dataset.add.split(":");
+      const r=drec(id);
+      const en={i:S.seq++, t:type, r: TYPES[type].routed? (type==="staffing"?"HR":"Higher Management") : "", x:""};
+      r.e.push(en);
+      // logging a problem shouldn't leave the department reading "all good"
+      if(!r.s) r.s = (type==="win" ? "good" : "attn");
+      else if((type==="issue"||type==="concern") && r.s==="good") r.s="attn";
+      save();
+      const box=$(`[data-entries="${id}"]`);
+      box.insertAdjacentHTML("beforeend", entryHTML(id,en));
+      const card=t.closest(".dept");
+      $$(".st",card).forEach(b=> b.classList.toggle("on", b.dataset.status===id+":"+r.s));
+      card.classList.add("has-status");
+      const ta=$(`[data-text="${id}:${en.i}"]`); if(ta) ta.focus();
+      refresh(); return;
+    }
+
+    if(t.dataset.del){
+      const [id,i]=t.dataset.del.split(":");
+      const r=drec(id);
+      r.e = r.e.filter(x=> String(x.i)!==i); save();
+      const el=t.closest(".entry"); if(el) el.remove();
+      refresh(); return;
+    }
+  });
+
+  app.addEventListener("input", e=>{
+    const el=e.target;
+    if(el.dataset.text!=null){
+      const [id,i]=el.dataset.text.split(":");
+      const en=(drec(id).e||[]).find(x=>String(x.i)===i);
+      if(en){ en.x=el.value; save(); refresh(); }
+    }
+  });
+  app.addEventListener("change", e=>{
+    const el=e.target;
+    if(el.dataset.route!=null){
+      const [id,i]=el.dataset.route.split(":");
+      const en=(drec(id).e||[]).find(x=>String(x.i)===i);
+      if(en){ en.r=el.value; save(); }
+    }
+  });
+}
+
+function refresh(){
+  const c=counts();
+  $("#pctnum").innerHTML = `<b>${c.reported}</b> of ${c.total} departments logged`;
+  const bits=[];
+  if(c.issues) bits.push(c.issues+" issue"+(c.issues>1?"s":""));
+  if(c.entries) bits.push(c.entries+" note"+(c.entries>1?"s":""));
+  $("#pctright").textContent = bits.join(" · ") || "nothing logged yet";
+  $("#barfill").style.width = c.pct+"%";
+
+  deptList().forEach(({id})=>{
+    const p=$(`[data-pill="${id}"]`); if(!p) return;
+    const r=S.depts[id]||{};
+    const n=(r.e||[]).filter(x=>(x.x||"").trim()).length;
+    p.className = "pill s-"+(r.s||"none");
+    p.textContent = (r.s?STATUS[r.s].short:"Not yet") + (n? " · "+n : "");
+  });
+
+  const sub=$("#submitbtn");
+  if(sub) sub.textContent = S.submittedAt ? "Send update to office" : "Send to office";
+}
+
+/* ================= report ================= */
+function collect(st){
+  st=st||S;
+  const out={issues:[],concern:[],win:[],product:[],staffing:[],skipped:[],attn:[]};
+  deptList(st).forEach(({d,id,block})=>{
+    const r=(st.depts||{})[id]||{};
+    if(r.s==="skip") out.skipped.push(d.name);
+    if(r.s==="attn") out.attn.push(d.name);
+    (r.e||[]).forEach(en=>{
+      const x=(en.x||"").trim(); if(!x) return;
+      const row={dept:d.name, block, type:en.t, route:en.r||"", text:x};
+      if(en.t==="issue") out.issues.push(row); else out[en.t].push(row);
+    });
+  });
+  return out;
+}
+
+function buildReport(st){
+  st=st||S;
+  const def=shiftDef(st.shift); if(!def) return "";
+  const c=counts(st), g=collect(st), L=[];
+  const D="---------------------------------";
+
+  L.push("MANAGER DAILY LOG — "+def.name.toUpperCase());
+  if(st.store) L.push("Store: "+st.store);
+  L.push(prettyDate(st.date));
+  if(st.manager) L.push("Manager: "+st.manager);
+  const dt=[st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean);
+  if(dt.length) L.push("Day type: "+dt.join(", "));
+  L.push("Departments logged: "+c.reported+" of "+c.total+"  ("+c.good+" all good, "+c.attn+" need attention, "+c.skip+" not covered)");
+  L.push("");
+
+  if(g.issues.length){
+    L.push(D); L.push("ISSUES ("+g.issues.length+")"); L.push(D);
+    ROUTES.concat([""]).forEach(rt=>{
+      const rows=g.issues.filter(i=>(i.route||"")===rt);
+      if(!rows.length) return;
+      L.push(""); L.push("> "+(rt||"UNROUTED").toUpperCase());
+      rows.forEach(r=>{ L.push("  ["+r.dept+"] "+r.text); });
+    });
+    L.push("");
+  }
+
+  [["concern","CONCERNS / WATCH ITEMS"],["product","PRODUCT & WASTE"],["staffing","STAFFING"],["win","WINS"]].forEach(([k,title])=>{
+    if(!g[k].length) return;
+    L.push(D); L.push(title+" ("+g[k].length+")"); L.push(D);
+    g[k].forEach(r=> L.push("  ["+r.dept+"]"+(r.route?" ("+r.route+")":"")+" "+r.text));
+    L.push("");
+  });
+
+  if(g.skipped.length){ L.push(D); L.push("NOT COVERED THIS SHIFT"); L.push(D); L.push("  "+g.skipped.join(", ")); L.push(""); }
+
+  if(!g.issues.length && !g.concern.length && !g.product.length && !g.staffing.length && !g.win.length)
+    L.push("No issues, concerns or notes recorded this shift.");
+
+  return L.join("\n");
+}
+
+function payload(st){
+  st=st||S;
+  const def=shiftDef(st.shift), c=counts(st);
+  const entries=[];
+  deptList(st).forEach(({d,id,block})=>{
+    const r=(st.depts||{})[id]||{};
+    (r.e||[]).forEach(en=>{
+      const x=(en.x||"").trim(); if(!x) return;
+      entries.push({department:d.name, block, status:r.s||"", type:TYPES[en.t].label, route:en.r||"", text:x});
+    });
+  });
+  const depts = deptList(st).map(({d,id})=>({ name:d.name, status:(st.depts[id]||{}).s||"" }));
+  return {
+    store: st.store||(STORE?STORE.name:""),
+    storeId: st.storeId||(STORE?STORE.id:""),
+    date: st.date,
+    shift: def? def.name : st.shift,
+    shiftId: st.shift,
+    manager: st.manager||"",
+    dayType: [st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean).join(", "),
+    counts: c, depts, entries,
+    report: buildReport(st)
+  };
+}
+
+/* ================= sending ================= */
+function outbox(){ try{ return JSON.parse(localStorage.getItem(OKEY)||"[]"); }catch(e){ return []; } }
+function setOutbox(o){ try{ localStorage.setItem(OKEY, JSON.stringify(o)); }catch(e){} }
+
+async function postOnce(p){
+  if(!CFG.endpoint) throw new Error("no-endpoint");
+  const res = await fetch(CFG.endpoint, {
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify(p),
+    redirect:"follow"
+  });
+  const txt = await res.text();
+  let j=null; try{ j=JSON.parse(txt); }catch(e){}
+  if(!res.ok || (j && j.ok===false)) throw new Error((j&&j.error)||("HTTP "+res.status));
+  return j||{ok:true};
+}
+
+async function flushOutbox(silent){
+  const o=outbox(); if(!o.length || !CFG.endpoint) return;
+  const left=[];
+  for(const p of o){
+    try{ await postOnce(p); }catch(e){ left.push(p); }
+  }
+  setOutbox(left);
+  updateQueueChip();
+  if(!silent && left.length===0) toast("Queued reports sent");
+}
+
+function updateQueueChip(){
+  const n=outbox().length, el=$("#queuechip");
+  if(!el) return;
+  el.classList.toggle("hidden", n===0);
+  el.textContent = n+" waiting to send";
+}
+
+async function submit(){
+  const c=counts();
+  if(!c.reported){ toast("Log at least one department first"); return; }
+  const p=payload();
+  if(!CFG.endpoint){
+    openSheet("Not connected yet", `<p>This copy isn't connected to the office sheet yet, so there's nowhere to send it. You can still copy, download or print the report.</p>
+      <div class="field" style="margin-top:16px"><label for="ep">Office link (paste once)</label><input type="text" id="ep" placeholder="https://script.google.com/macros/s/.../exec"></div>`,
+      [{label:"Save link", cls:"go", fn:()=>{ const v=$("#ep").value.trim(); if(!v) return; CFG.endpoint=v; saveCfg(); closeSheet(); toast("Saved — try sending again"); }},
+       {label:"Close", fn:closeSheet}]);
+    return;
+  }
+  const btn=$("#submitbtn"); const old=btn.textContent;
+  btn.disabled=true; btn.textContent="Sending…";
+  try{
+    await postOnce(p);
+    S.submittedAt = new Date().toISOString(); save();
+    toast("Sent to the office");
+    closeSheet();
+  }catch(err){
+    const o=outbox().filter(x=>!(x.date===p.date && x.shiftId===p.shiftId)); o.push(p); setOutbox(o);
+    S.submittedAt = new Date().toISOString(); save();
+    toast("No connection — saved and will send itself later");
+    updateQueueChip();
+  }
+  btn.disabled=false; btn.textContent=old;
+  refresh();
+}
+
+/* ================= sheets / summary ================= */
+function showSummary(){
+  const c=counts(), g=collect(), rep=buildReport();
+  openSheet("Shift report", `
+    <div class="stats">
+      <div class="stat"><b>${c.reported}/${c.total}</b><span>Logged</span></div>
+      <div class="stat issue"><b>${g.issues.length}</b><span>Issues</span></div>
+      <div class="stat win"><b>${g.win.length}</b><span>Wins</span></div>
+    </div>
+    ${S.submittedAt?`<p class="sent">Last sent ${new Date(S.submittedAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}. Sending again replaces it.</p>`:""}
+    <pre class="report" id="reporttext">${esc(rep)}</pre>`,
+    [{label:S.submittedAt?"Send update":"Send to office", cls:"go", id:"submitbtn", fn:submit},
+     {label:"Copy", fn:()=>copyText(rep)},
+     {label:"Download", fn:()=>download(rep)}]);
+}
+
+function showHistory(){
+  const h=pruneHistory();
+  const body = h.length ? h.map((e,i)=>`
+    <div class="dept open" style="margin-bottom:9px">
+      <button class="dept-head" data-h="${i}">
+        <span class="nm">${esc(shortDate(e.date))}</span>
+        <span class="pill s-good">${esc(shiftDef(e.shift)?shiftDef(e.shift).short:e.shift)}</span>
+        <span class="caret"></span>
+      </button>
+      <div class="dept-body hidden" style="padding:12px"><pre class="report">${esc(e.report)}</pre></div>
+    </div>`).join("")
+    : `<p>Nothing saved yet. Completed days are kept here for ${RETAIN_DAYS} days.</p>`;
+  openSheet("Past "+RETAIN_DAYS+" days", body, [{label:"Close", cls:"go", fn:closeSheet}]);
+  $$("[data-h]").forEach(b=> b.addEventListener("click",()=>{
+    const c=b.closest(".dept"); c.classList.toggle("open"); $(".dept-body",c).classList.toggle("hidden");
+  }));
+}
+
+function openSheet(title, bodyHTML, buttons){
+  closeSheet();
+  const el=document.createElement("div");
+  el.className="sheet"; el.id="sheet";
+  el.innerHTML=`<div class="sheet-in">
+    <div class="sheet-head"><h3>${esc(title)}</h3><button class="x" id="sheetx">×</button></div>
+    <div class="sheet-body">${bodyHTML}</div>
+    <div class="sheet-foot" id="sheetfoot"></div>
+  </div>`;
+  document.body.appendChild(el);
+  (buttons||[]).forEach(b=>{
+    const btn=document.createElement("button");
+    btn.textContent=b.label; if(b.cls) btn.className=b.cls; if(b.id) btn.id=b.id;
+    btn.addEventListener("click", b.fn);
+    $("#sheetfoot").appendChild(btn);
+  });
+  $("#sheetx").addEventListener("click", closeSheet);
+  el.addEventListener("click", e=>{ if(e.target===el) closeSheet(); });
+}
+function closeSheet(){ const s=$("#sheet"); if(s) s.remove(); }
+
+function toast(m){
+  let t=$("#toast");
+  if(!t){ t=document.createElement("div"); t.id="toast"; t.className="toast"; document.body.appendChild(t); }
+  t.textContent=m; requestAnimationFrame(()=>t.classList.add("show"));
+  clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove("show"),2400);
+}
+
+function copyText(txt){
+  const done=()=>toast("Copied — paste it anywhere");
+  const fb=()=>{ const ta=document.createElement("textarea"); ta.value=txt;
+    ta.style.cssText="position:fixed;top:0;left:0;opacity:0"; document.body.appendChild(ta);
+    ta.focus(); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){ toast("Select the text to copy"); } ta.remove(); };
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done).catch(fb); else fb();
+}
+
+function download(txt){
+  const def=shiftDef(S.shift);
+  const name="manager-log-"+S.date+"-"+def.id+(S.manager?"-"+S.manager.trim().toLowerCase().replace(/[^a-z0-9]+/g,"-"):"")+".txt";
+  const b=new Blob([txt],{type:"text/plain;charset=utf-8"}), u=URL.createObjectURL(b);
+  const a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{a.remove();URL.revokeObjectURL(u);},400);
+  toast("Downloaded");
+}
+
+/* ================= chrome ================= */
+function wireChrome(){
+  $("#daybtn").addEventListener("click",()=>{
+    const rows=[["order","Order day"],["delivery","Delivery day"],["tue","Price changes"]];
+    openSheet("Today's day type",
+      `<p style="margin-top:0;color:var(--ink-2);font-size:14px">These add the matching reminders to each department's "what to look at" list.</p>
+       <div class="toggle-row" id="sheettoggles">${rows.map(([k,l])=>`<button class="toggle${S.day[k]?" on":""}" data-d="${k}">${l}</button>`).join("")}</div>`,
+      [{label:"Done", cls:"go", fn:()=>{ closeSheet(); renderList(); }}]);
+    $$("#sheettoggles .toggle").forEach(b=>b.addEventListener("click",()=>{
+      b.classList.toggle("on"); S.day[b.dataset.d]=b.classList.contains("on"); save();
+    }));
+  });
+
+  $("#menubtn").addEventListener("click",()=>{
+    const n=outbox().length;
+    openSheet("Menu", `<div style="display:grid;gap:9px">
+      <button class="primary ghost" id="m-shift">Switch shift</button>
+      <button class="primary ghost" id="m-past">Past ${RETAIN_DAYS} days</button>
+      ${n?`<button class="primary ghost" id="m-flush">Send ${n} waiting report${n>1?"s":""}</button>`:""}
+      ${stores().length>1?`<button class="primary ghost" id="m-store">Change store (now ${esc(STORE?STORE.name:"none")})</button>`:""}
+      <button class="primary ghost" id="m-settings">Office link</button>
+      <button class="primary ghost" id="m-reset" style="color:var(--red)">Clear today and start over</button>
+    </div>
+    <p class="hint" style="margin-top:16px">Everything saves on this device as you type. Days older than ${RETAIN_DAYS} clear themselves.</p>`,
+    [{label:"Close", cls:"go", fn:closeSheet}]);
+
+    $("#m-shift").addEventListener("click",()=>{closeSheet();renderSetup();});
+    $("#m-past").addEventListener("click",()=>{closeSheet();showHistory();});
+    if($("#m-flush")) $("#m-flush").addEventListener("click",()=>{closeSheet();flushOutbox();});
+    if($("#m-store")) $("#m-store").addEventListener("click",()=>{
+      if(!confirm("Switch this phone to a different store? Anything logged today that has not been sent will be cleared.")) return;
+      setStore(null); const m=S.manager; S=blank(); S.manager=m; save(); closeSheet(); renderSetup();
+    });
+    $("#m-settings").addEventListener("click",()=>{
+      openSheet("Settings", `
+        <p style="margin-top:0">This phone is logging as <b>${STORE?esc(STORE.name):"no store chosen"}</b>.</p>
+        <div class="field"><label for="ep2">Office link</label><input type="text" id="ep2" value="${esc(CFG.endpoint||"")}" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <p class="hint">Only needed if this phone was opened without the store link. Normally it is already set.</p>`,
+        [{label:"Save", cls:"go", fn:()=>{
+          CFG.endpoint=$("#ep2").value.trim(); saveCfg(); closeSheet(); toast("Saved");
+        }},{label:"Cancel", fn:closeSheet}]);
+    });
+    $("#m-reset").addEventListener("click",()=>{
+      if(!confirm("Clear everything written today? This can't be undone.")) return;
+      const m=S.manager, sh=S.shift, d=S.day;
+      S=blank(); S.manager=m; S.shift=sh; S.day=d; save();
+      closeSheet(); renderList(); toast("Cleared");
+    });
+  });
+
+  $("#summarybtn").addEventListener("click", showSummary);
+  $("#collapsebtn").addEventListener("click",()=>{
+    const anyOpen=$$(".dept.open").length>0;
+    $$(".dept").forEach(c=>{
+      c.classList.toggle("open",!anyOpen);
+      $(".dept-body",c).classList.toggle("hidden",anyOpen);
+      S.open[c.dataset.dept]=!anyOpen;
+    });
+    save();
+    if(anyOpen) window.scrollTo({top:0,behavior:"smooth"});
+  });
+}
+
+/* ================= boot ================= */
+load();
+wireChrome();
+wireList();
+updateQueueChip();
+if(STORE && S.shift && Object.keys(S.depts).length) renderList(); else renderSetup();
+flushOutbox(true);
+
+setInterval(()=>{
+  if(S.date!==todayKey()){ archive(S); const m=S.manager; S=blank(); S.manager=m; save(); renderSetup(); }
+  flushOutbox(true);
+}, 60000);
+window.addEventListener("online", ()=>flushOutbox(true));
+</script>
+</body>
+</html>
