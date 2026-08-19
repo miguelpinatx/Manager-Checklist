@@ -748,10 +748,8 @@ function wireApp(){
       const card=t.closest(".dept");
       $$(".st",card).forEach(b=> b.classList.toggle("on", b.dataset.status===id+":"+r.s));
       card.classList.toggle("has-status", !!r.s);
-      // logged and nothing written here yet -> fold it away and move on
-      const typing = (r.e||[]).some(x=>(x.x||"").trim());
-      if(r.s && !typing){ S.open[id]=false; }
-      save(); paintOpen(); refresh(); return;
+      // stays open on purpose — logging a status is often followed by writing a note
+      save(); refresh(); return;
     }
     if(t.dataset.add){
       const [id,type]=t.dataset.add.split(":"); const r=drec(id);
