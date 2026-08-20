@@ -328,6 +328,29 @@ body.typing .footbar{display:none}
 }
 @media(prefers-reduced-motion:reduce){ .news-h.news-in{animation:none} }
 
+/* ---------- shift wrap up, and the handover from the shift before ---------- */
+.wrapblock{margin-top:26px}
+.wrapblock > h2{color:var(--accent)}
+.endcard .confirmbox{margin:0 0 14px}
+.wrapnote{margin-bottom:16px}
+.wrapnote > label{margin-bottom:7px}
+.wrapnote textarea{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:11px;
+  background:#fff;resize:vertical;min-height:82px;line-height:1.45}
+.wrapnote textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+
+.handoff{background:var(--amber-soft);border:1px solid #e8d3b2;border-radius:var(--radius);
+  padding:12px 14px;margin-bottom:12px}
+.handoff-top{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.handoff-tag{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  color:#fff;background:var(--amber);border-radius:999px;padding:4px 10px;flex-shrink:0}
+.handoff-who{font-size:12.5px;color:var(--ink-2)}
+.handoff p{margin:0;font-size:14.5px;line-height:1.5;color:#5c3c0c;white-space:pre-wrap}
+
+.namebar select{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:11px;
+  background:#fff;min-height:var(--tap);margin-bottom:8px}
+.namebar select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+@media(min-width:900px){ .namebar select{flex:1;min-height:42px;margin-bottom:0} }
+
 /* ---------- yesterday, on the start screen ---------- */
 .yday{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
   box-shadow:var(--shadow);padding:13px 14px;margin-bottom:22px}
@@ -621,7 +644,7 @@ const CONFIG = {
 /* ================= constants ================= */
 const KEY="mgr-v4", HKEY="mgr-history-v4", OKEY="mgr-outbox-v4", CKEY="mgr-config-v4",
       SKEY="mgr-store-v4", CODEKEY="mgr-code-v4", BKEY="mgr-bulletin-v4", TKEY="mgr-tasks-v4",
-      TOPENKEY="mgr-tasksopen-v4";
+      TOPENKEY="mgr-tasksopen-v4", MKEY="mgr-roster-v4";
 const RETAIN_DAYS = 15;
 const LOOKBACK_DAYS = 3;
 const ROUTES = ["Higher Management","HR","Commissary","Maintenance"];
@@ -659,6 +682,8 @@ function prettyDate(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m
 function shortDate(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});}
 function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/864e5);}
 const SHIFT_IDS = DATA.map(s=>s.id);
+const SHIFT_WORD = { opening:"opening", second:"2nd", closing:"closing" };
+function shiftWord(id){ return SHIFT_WORD[id] || ((shiftDef(id)||{}).short||"next").toLowerCase(); }
 
 /* ================= config, store, code ================= */
 let CFG = Object.assign({}, CONFIG);
@@ -693,24 +718,21 @@ function resolveStore(){
 resolveStore();
 
 /* ================= wrap-up department ================= */
-const WRAPUP = {
-  name:"Shift wrap-up", wrap:true,
-  guide:[
-    "Anything that needs a decision from higher management",
-    "Anything HR needs to know — call-outs, conduct, hours, coaching",
-    "Anything commissary needs — product quality, quantities, sell-by dates",
-    "Repairs or equipment that need scheduling"
-  ],
-  report:["How the shift ran overall","Anything the next manager needs to pick up"]
-};
-DATA.forEach(sh=> sh.blocks.push({ time:"End of shift", depts:[WRAPUP] }));
+/* Prompts for the wrap-up section at the foot of every shift. */
+const WRAPUP_PROMPTS = [
+  "Anything that needs a decision from higher management",
+  "Anything HR needs to know — call-outs, conduct, hours, coaching",
+  "Anything commissary needs — product quality, quantities, sell-by dates",
+  "Repairs or equipment that need scheduling",
+  "Anything the next manager needs to pick up"
+];
 
 /* ================= state ================= */
 function defaultShift(){ return SHIFT_IDS[0]; }   // always start on Opening
 function blank(){
   return { v:4, date:todayKey(), store:STORE?STORE.name:"", storeId:STORE?STORE.id:"",
            day:{order:false,delivery:false,tue:new Date().getDay()===2},
-           shift:defaultShift(), managers:{}, sent:{}, depts:{}, tasks:{}, seq:1, open:{}, started:false };
+           shift:defaultShift(), managers:{}, sent:{}, depts:{}, tasks:{}, wrap:{}, seq:1, open:{}, started:false };
 }
 let S = blank();
 
@@ -740,7 +762,7 @@ function load(){
   if(!saved || saved.v!==4) return;
   if(saved.date !== todayKey()){ archiveAll(saved); S=blank(); save(); return; }
   S=saved;
-  S.open=S.open||{}; S.managers=S.managers||{}; S.sent=S.sent||{}; S.tasks=S.tasks||{};
+  S.open=S.open||{}; S.managers=S.managers||{}; S.sent=S.sent||{}; S.tasks=S.tasks||{}; S.wrap=S.wrap||{};
   if(STORE && S.storeId && S.storeId!==STORE.id){ archiveAll(S); S=blank(); save(); return; }
   if(STORE){ S.store=STORE.name; S.storeId=STORE.id; }
   if(SHIFT_IDS.indexOf(S.shift)<0 && S.shift!==RECENT) S.shift=defaultShift();
@@ -757,6 +779,8 @@ function deptList(st,sid){
   return out;
 }
 function drec(id){ return S.depts[id] || (S.depts[id]={s:null,e:[]}); }
+function wrec(sid){ S.wrap=S.wrap||{}; return S.wrap[sid] || (S.wrap[sid]={done:false,note:"",at:""}); }
+function wrapped(sid){ return !!(S.wrap||{})[sid] && !!S.wrap[sid].done; }
 
 function counts(st,sid){
   st=st||S; sid=sid||st.shift;
@@ -778,7 +802,8 @@ function counts(st,sid){
 function hasContent(st,sid){
   st=st||S;
   const c=counts(st,sid);
-  return c.reported>0 || c.entries>0;
+  const w=(st.wrap||{})[sid];
+  return c.reported>0 || c.entries>0 || !!(w && (w.done || (w.note||"").trim()));
 }
 
 /* ================= yesterday, for whoever opens up ================= */
@@ -877,7 +902,7 @@ function renderSetup(){
   $("#start").addEventListener("click",()=>{
     if(!STORE){ toast("Pick your store first"); return; }
     if($("#code")) setCode($("#code").value);
-    S.started=true; save(); renderMain(); loadBulletins(); loadTasks();
+    S.started=true; save(); renderMain(); loadBulletins(); loadTasks(); loadRoster();
   });
   if($("#pastbtn")) $("#pastbtn").addEventListener("click", showHistory);
 }
@@ -905,10 +930,11 @@ function renderTabs(){
   $("#tabs").innerHTML = SHIFT_IDS.map(id=>{
     const def=shiftDef(id);
     const state = S.sent[id] ? "sent" : (hasContent(S,id) ? "wip" : "");
+    const okWalk = wrapped(id);
     const c=SHIFT_COLOR[id]||"#1f6b45", t=SHIFT_TINT[id]||"#e8f2ec";
     return `<button class="stab${S.shift===id?" on":""}${state?" "+state:""}" data-tab="${id}"
         style="--c:${c};--t:${t}">
-      <span class="tlabel">${esc(def.name)}</span>${state==="sent"?'<span class="tmark">✓</span>':(state==="wip"?'<span class="tdot"></span>':"")}
+      <span class="tlabel">${esc(def.name)}</span>${state==="sent"?'<span class="tmark">✓</span>':(okWalk?'<span class="tmark">✓</span>':(state==="wip"?'<span class="tdot"></span>':""))}
     </button>`;
   }).join("") + `<button class="stab${S.shift===RECENT?" on":""}" data-tab="${RECENT}"
       style="--c:${RECENT_COLOR};--t:${RECENT_TINT}"><span class="tlabel">Prev Reports (${LOOKBACK_DAYS} days)</span></button>`;
@@ -925,9 +951,26 @@ function renderShift(){
   const def=shiftDef(S.shift);
   const isLast = S.shift===SHIFT_IDS[SHIFT_IDS.length-1];
   let html='<div class="wrap">';
+  const prevId = SHIFT_IDS[SHIFT_IDS.indexOf(S.shift)-1];
+  const prevW  = prevId ? (S.wrap||{})[prevId] : null;
+  if(prevW && (prevW.note||"").trim()){
+    html += `<div class="handoff">
+      <div class="handoff-top"><span class="handoff-tag">From ${esc(shiftDef(prevId).short)}</span>
+        <span class="handoff-who">${esc((S.managers||{})[prevId]||"no name")}</span></div>
+      <p>${esc(prevW.note)}</p>
+    </div>`;
+  }
+
   html += `<div class="namebar">
     <label for="mgrname">${esc(def.name)} — who's on?</label>
-    <input type="text" id="mgrname" placeholder="Your name" autocomplete="name" value="${esc(S.managers[S.shift]||"")}">
+    ${ROSTER.length ? `<select id="mgrpick">
+        <option value="">Who's on?</option>
+        ${ROSTER.map(n=>`<option value="${esc(n)}"${S.managers[S.shift]===n?" selected":""}>${esc(n)}</option>`).join("")}
+        <option value="__other"${S.managers[S.shift] && ROSTER.indexOf(S.managers[S.shift])<0?" selected":""}>Someone else…</option>
+      </select>
+      <input type="text" id="mgrname" placeholder="Your name" autocomplete="name" value="${esc(S.managers[S.shift]||"")}"
+        class="${ROSTER.indexOf(S.managers[S.shift]||"")<0 && (S.managers[S.shift]||"")!=="" ? "" : "hidden"}">`
+      : `<input type="text" id="mgrname" placeholder="Your name" autocomplete="name" value="${esc(S.managers[S.shift]||"")}">`}
     ${S.sent[S.shift]?`<span class="sentmark">Sent ${new Date(S.sent[S.shift]).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</span>`:""}
   </div>`;
 
@@ -937,19 +980,43 @@ function renderShift(){
     html += `</section>`;
   });
 
-  html += `<div class="endcard">
-    <h3>${isLast?"Closing the store":"Finishing up"}</h3>
-    <p>${isLast?"Last thing before you lock up.":"Send this shift when you're done walking."}</p>
-    <button class="primary" id="endsend">${isLast?"Review &amp; close the day":"Review &amp; send "+esc(def.short.toLowerCase())}</button>
-    <p class="hint">${isLast
-      ? "Closing the day checks every shift is finished, sends them all to the office, files the day away and clears the screen for tomorrow."
-      : "Send as often as you like — the newest one replaces the last."}</p>
-  </div>`;
+  const w = (S.wrap||{})[S.shift] || {done:false,note:""};
+  const nextDef = isLast ? null : shiftDef(SHIFT_IDS[SHIFT_IDS.indexOf(S.shift)+1]);
+  html += `<section class="block wrapblock"><h2>Shift wrap up</h2>
+    <div class="endcard">
+      <div class="prompts"><span>Before you sign off</span><ul>${WRAPUP_PROMPTS.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>
+      <label class="confirmbox${w.done?" on":""}" id="wrapwrap">
+        <input type="checkbox" id="wrapdone" ${w.done?"checked":""}>
+        <span>I walked my departments and my reporting for this shift is complete.</span>
+      </label>
+      <div class="field wrapnote">
+        <label for="wrapnote">Anything for the office${nextDef?" or the "+esc(shiftWord(nextDef.id))+" shift":""}?</label>
+        <textarea id="wrapnote" rows="3" placeholder="Handover notes, things half-done, anything the next person should know. Leave blank if there's nothing.">${esc(w.note||"")}</textarea>
+      </div>
+      <button class="primary" id="endsend">${isLast?"Review &amp; close the day":"Review &amp; send this shift"}</button>
+      <p class="hint">${isLast
+        ? "Closing the day checks every shift is finished, sends them all to the office, files the day away and clears the screen for tomorrow."
+        : "Send as often as you like — the newest one replaces the last."}</p>
+    </div>
+  </section>`;
 
   html += '</div>';
   $("#app").innerHTML=html;
 
   $("#mgrname").addEventListener("input",e=>{ S.managers[S.shift]=e.target.value; save(); });
+  if($("#mgrpick")) $("#mgrpick").addEventListener("change",e=>{
+    const v=e.target.value, box=$("#mgrname");
+    if(v==="__other"){ box.classList.remove("hidden"); box.value=""; box.focus(); S.managers[S.shift]=""; }
+    else { box.classList.add("hidden"); box.value=v; S.managers[S.shift]=v; }
+    save(); refresh();
+  });
+  $("#wrapdone").addEventListener("change",e=>{
+    const r=wrec(S.shift);
+    r.done=e.target.checked; r.at=r.done?new Date().toISOString():"";
+    $("#wrapwrap").classList.toggle("on", r.done);
+    save(); refresh();
+  });
+  $("#wrapnote").addEventListener("input",e=>{ wrec(S.shift).note=e.target.value; save(); refresh(); });
   $("#endsend").addEventListener("click", showSummary);
 }
 
@@ -1144,6 +1211,8 @@ function buildReport(st,sid){
   if(mgr) L.push("Manager: "+mgr);
   const dt=[st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean);
   if(dt.length) L.push("Day type: "+dt.join(", "));
+  const w=(st.wrap||{})[sid]||{};
+  L.push("Walk confirmed: "+(w.done?"Yes":"NOT CONFIRMED"));
   const fl=[];
   if(c.attn) fl.push(c.attn+" need"+(c.attn>1?"":"s")+" attention");
   if(c.skip) fl.push(c.skip+" not covered");
@@ -1177,8 +1246,12 @@ function buildReport(st,sid){
     L.push("");
   });
   if(g.skipped.length){ L.push(D); L.push("NOT COVERED THIS SHIFT"); L.push(D); L.push("  "+g.skipped.join(", ")); L.push(""); }
+  if((w.note||"").trim()){
+    L.push(D); L.push("FOR THE OFFICE / NEXT SHIFT"); L.push(D);
+    L.push("  "+w.note.trim()); L.push("");
+  }
   if(!g.issues.length&&!g.concern.length&&!g.product.length&&!g.staffing.length&&!g.note.length&&!g.win.length)
-    L.push("Nothing written down this shift.");
+    L.push(w.done ? "Walked, nothing flagged." : "Nothing written down this shift.");
   return L.join("\n");
 }
 
@@ -1202,6 +1275,9 @@ function payload(st,sid){
     manager: (st.managers||{})[sid]||"",
     dayType: [st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean).join(", "),
     counts:c,
+    wrap: { done: !!((st.wrap||{})[sid]||{}).done,
+            note: (((st.wrap||{})[sid]||{}).note||"").trim(),
+            at:   ((st.wrap||{})[sid]||{}).at || "" },
     tasks: tasksFor(sid).map(t=>({ id:t.id, task:t.task,
       done: taskDone(sid,t.id), at: ((st.tasks||{})[taskKey(sid,t.id)]||{}).at || "" })),
     depts: deptList(st,sid).map(({d,id})=>({name:d.name, status:(st.depts[id]||{}).s||""})),
@@ -1276,9 +1352,22 @@ function askEndpoint(){
 }
 
 /* ================= store bulletin ================= */
-let BULLETINS = [], TASKS = [];
+let BULLETINS = [], TASKS = [], ROSTER = [];
 try{ const b=JSON.parse(localStorage.getItem(BKEY)||"null"); if(b && Array.isArray(b.items)) BULLETINS=b.items; }catch(e){}
 try{ const t=JSON.parse(localStorage.getItem(TKEY)||"null"); if(t && Array.isArray(t.items)) TASKS=t.items; }catch(e){}
+try{ const m=JSON.parse(localStorage.getItem(MKEY)||"null"); if(m && Array.isArray(m.items)) ROSTER=m.items; }catch(e){}
+
+async function loadRoster(){
+  if(!CFG.endpoint || !CODE || !STORE) return;
+  try{
+    const url = CFG.endpoint+"?action=managers&code="+encodeURIComponent(CODE)+"&store="+encodeURIComponent(STORE.name);
+    const j = await (await fetch(url,{redirect:"follow"})).json();
+    if(!j.ok) return;
+    ROSTER = j.managers||[];
+    try{ localStorage.setItem(MKEY, JSON.stringify({at:Date.now(), items:ROSTER})); }catch(e){}
+    if(S.shift!==RECENT && S.started) renderMain();
+  }catch(e){}
+}
 
 async function loadTasks(){
   if(!CFG.endpoint || !CODE || !STORE) return;
@@ -1421,7 +1510,7 @@ function showSummary(){
     ${S.sent[sid]?`<p class="sent">Already sent ${new Date(S.sent[sid]).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}. Sending again replaces it.</p>`:""}
     <pre class="report" id="reporttext">${esc(rep)}</pre>`,
     [{label:S.sent[sid]?"Send update":"Send to office", cls:"go", id:"submitbtn", fn:async()=>{
-        if(!counts(S,sid).reported){ toast("Log at least one department first"); return; }
+        if(!hasContent(S,sid)){ toast("Confirm your walk in the wrap up first"); return; }
         if(sid===SHIFT_IDS[SHIFT_IDS.length-1]){ confirmEndOfDay(); return; }   // closing shift gets a check first
         const b=$("#submitbtn"); b.disabled=true; b.textContent="Sending…";
         const res=await sendShift(sid);
@@ -1437,11 +1526,12 @@ function showSummary(){
 function confirmEndOfDay(){
   const rows=SHIFT_IDS.map(id=>{
     const def=shiftDef(id), c=counts(S,id), has=hasContent(S,id);
+    const okWalk = wrapped(id);
     const state = !has ? "nothing logged" : (S.sent[id] ? "sent" : "will be sent now");
-    const dot   = !has ? "d-none" : (S.sent[id] ? "d-good" : "d-warn");
+    const dot   = !okWalk ? "d-warn" : (S.sent[id] ? "d-good" : "d-warn");
     return `<div class="repeat"><span class="dot ${dot}"></span>
       <div><b>${esc(def.name)}</b> — ${esc((S.managers||{})[id]||"no name")}<br>
-      <span style="color:var(--ink-2)">${c.reported} of ${c.total} departments &middot; ${esc(state)}</span></div></div>`;
+      <span style="color:var(--ink-2)">${okWalk?"walk confirmed":"<b>walk not confirmed</b>"} &middot; ${esc(state)}</span></div></div>`;
   }).join("");
   const unsent=SHIFT_IDS.filter(id=>hasContent(S,id) && !S.sent[id]).length;
 
@@ -1697,6 +1787,7 @@ if(STORE && S.started) renderMain(); else renderSetup();
 flushOutbox(true);
 loadBulletins();
 loadTasks();
+loadRoster();
 
 setInterval(()=>{
   if(S.date!==todayKey()){ archiveAll(S); S=blank(); save(); renderSetup(); }
