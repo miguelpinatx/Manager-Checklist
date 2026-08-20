@@ -15,7 +15,8 @@ var RETAIN_DAYS     = 15;              // keep this many days on the live tabs
 var LOOKBACK_DAYS   = 3;               // how far back managers can read on their phones
 /* ====================================== */
 
-var SHIFTS_SHEET  = "Shifts";
+var SHIFTS_SHEET   = "Shifts";
+var BULLETIN_SHEET = "Bulletin";
 var ENTRIES_SHEET = "Entries";
 var ARCHIVE_SUFFIX = " (archive)";
 
@@ -24,6 +25,12 @@ var SHIFT_COLS = ["Received","Date","Store","Shift","Manager","Day type",
                   "Issues","Notes","Full report"];
 var ENTRY_COLS = ["Received","Date","Store","Shift","Manager","Time block",
                   "Department","Dept status","Type","Route to","Detail"];
+
+/* The Bulletin tab is where main office types announcements for managers.
+   Store   — leave blank for every store, or type one store's name
+   Starts / Ends — leave blank for "show it now, until I turn it off"
+   Active  — leave blank or type TRUE to show it; FALSE hides it          */
+var BULLETIN_COLS = ["Posted","Store","Headline","Message","Starts","Ends","Active"];
 
 /* ------------------------------------------------------------------ */
 /* Receiving a submitted shift                                         */
@@ -71,6 +78,12 @@ function doPost(e) {
 /* ------------------------------------------------------------------ */
 function doGet(e) {
   var p = (e && e.parameter) || {};
+
+  // the bulletin managers see at the top of their shift
+  if (p.action === "bulletin") {
+    if (String(p.code || "") !== STORE_CODE) return json({ ok: false, error: "bad-code" });
+    return json({ ok: true, bulletins: readBulletins(String(p.store || "")) });
+  }
 
   // managers reading the last few days for their own store, from their phone
   if (p.action === "recent") {
@@ -199,6 +212,57 @@ function readAll(name) {
     });
     return o;
   });
+}
+
+function readBulletins(store) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BULLETIN_SHEET);
+  if (!sh) { sheet(BULLETIN_SHEET, BULLETIN_COLS); return []; }   // create it so office can find it
+  if (sh.getLastRow() < 2) return [];
+
+  var rows = sh.getDataRange().getValues();
+  var head = rows.shift();
+  var col  = {};
+  head.forEach(function (h, i) { col[String(h).trim()] = i; });
+
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var out = [];
+
+  rows.forEach(function (r) {
+    var headline = String(r[col["Headline"]] || "").trim();
+    var message  = String(r[col["Message"]]  || "").trim();
+    if (!headline && !message) return;
+
+    var active = String(r[col["Active"]] === undefined ? "" : r[col["Active"]]).trim().toLowerCase();
+    if (active === "false" || active === "no" || active === "0") return;
+
+    var forStore = String(r[col["Store"]] || "").trim();
+    if (forStore && store && forStore !== store) return;
+
+    var starts = asDate(r[col["Starts"]]), ends = asDate(r[col["Ends"]]);
+    if (starts && starts > today) return;
+    if (ends   && ends   < today) return;
+
+    var posted = r[col["Posted"]];
+    out.push({
+      headline: headline,
+      message:  message,
+      store:    forStore,
+      posted:   posted instanceof Date
+                  ? Utilities.formatDate(posted, Session.getScriptTimeZone(), "yyyy-MM-dd")
+                  : String(posted || "")
+    });
+  });
+
+  return out.reverse().slice(0, 3);   // newest rows first, at most three
+}
+
+/** Run once from the editor if you want the Bulletin tab created before your first post. */
+function setupBulletinSheet() {
+  sheet(BULLETIN_SHEET, BULLETIN_COLS);
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BULLETIN_SHEET)
+    .getRange("A2:G2").setValues([[new Date(), "", "Example — delete this row",
+      "Leave Store blank to reach every store. Set Active to FALSE to take a bulletin down.", "", "", "FALSE"]]);
 }
 
 function json(o) {

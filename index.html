@@ -280,6 +280,22 @@ body.typing .footbar{display:none}
   .namebar input{flex:1;min-height:42px;padding:10px 13px}
   .sentmark{margin-top:0;flex-shrink:0}
 }
+
+/* ---------- tabs: full names, two rows on a phone ---------- */
+.stab .tlabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:639px){
+  .tabbar{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .stab{width:100%;font-size:12.5px;padding:8px 6px;min-height:44px}
+}
+
+/* ---------- store bulletin ---------- */
+.bulletins{margin-top:14px}
+.bult{background:#fff;border:1px solid var(--line);border-left:4px solid var(--blue);
+  border-radius:var(--radius);padding:12px 15px;margin-bottom:9px;box-shadow:var(--shadow)}
+.bult-tag{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--blue);margin-bottom:4px}
+.bult-h{font-size:16px;font-weight:750;letter-spacing:-.01em;line-height:1.3}
+.bult-m{font-size:14.5px;line-height:1.5;color:var(--ink-2);margin-top:4px;white-space:pre-wrap}
+@media(min-width:900px){ .bult-h{font-size:17px} .bult-m{font-size:15px} }
 </style>
 </head>
 <body>
@@ -354,7 +370,7 @@ const DATA = [
   ]
 },
 {
-  id:"second", name:"Second Shift Manager", short:"Second", window:"7:00am – 2:30pm",
+  id:"second", name:"2nd Shift Manager", short:"Second", window:"7:00am – 2:30pm",
   blocks:[
     { time:"7:00am – 8:30am", depts:[
       { name:"Admin work",
@@ -468,7 +484,7 @@ const CONFIG = {
 
 /* ================= constants ================= */
 const KEY="mgr-v4", HKEY="mgr-history-v4", OKEY="mgr-outbox-v4", CKEY="mgr-config-v4",
-      SKEY="mgr-store-v4", CODEKEY="mgr-code-v4";
+      SKEY="mgr-store-v4", CODEKEY="mgr-code-v4", BKEY="mgr-bulletin-v4";
 const RETAIN_DAYS = 15;
 const LOOKBACK_DAYS = 3;
 const ROUTES = ["Higher Management","HR","Commissary","Maintenance"];
@@ -543,10 +559,7 @@ const WRAPUP = {
 DATA.forEach(sh=> sh.blocks.push({ time:"End of shift", depts:[WRAPUP] }));
 
 /* ================= state ================= */
-function defaultShift(){
-  const h=new Date().getHours();
-  return h<13 ? "opening" : (h<15 ? "second" : "closing");
-}
+function defaultShift(){ return SHIFT_IDS[0]; }   // always start on Opening
 function blank(){
   return { v:4, date:todayKey(), store:STORE?STORE.name:"", storeId:STORE?STORE.id:"",
            day:{order:false,delivery:false,tue:new Date().getDay()===2},
@@ -668,7 +681,7 @@ function renderSetup(){
   $("#start").addEventListener("click",()=>{
     if(!STORE){ toast("Pick your store first"); return; }
     if($("#code")) setCode($("#code").value);
-    S.started=true; save(); renderMain();
+    S.started=true; save(); renderMain(); loadBulletins();
   });
   if($("#pastbtn")) $("#pastbtn").addEventListener("click", showHistory);
 }
@@ -687,9 +700,9 @@ function renderTabs(){
     const def=shiftDef(id);
     const state = S.sent[id] ? "sent" : (hasContent(S,id) ? "wip" : "");
     return `<button class="stab${S.shift===id?" on":""}${state?" "+state:""}" data-tab="${id}">
-      ${esc(def.short)}${state==="sent"?'<span class="tmark">✓</span>':(state==="wip"?'<span class="tdot"></span>':"")}
+      <span class="tlabel">${esc(def.name)}</span>${state==="sent"?'<span class="tmark">✓</span>':(state==="wip"?'<span class="tdot"></span>':"")}
     </button>`;
-  }).join("") + `<button class="stab${S.shift===RECENT?" on":""}" data-tab="${RECENT}">${LOOKBACK_DAYS} days</button>`;
+  }).join("") + `<button class="stab${S.shift===RECENT?" on":""}" data-tab="${RECENT}"><span class="tlabel">Prev Reports (${LOOKBACK_DAYS} days)</span></button>`;
 
   $$("#tabs .stab").forEach(b=> b.addEventListener("click",()=>{
     if(S.shift===b.dataset.tab) return;
@@ -702,6 +715,7 @@ function renderTabs(){
 function renderShift(){
   const def=shiftDef(S.shift);
   let html='<div class="wrap">';
+  html += bulletinHTML();
   html += `<div class="namebar">
     <label for="mgrname">${esc(def.name)} — who's on?</label>
     <input type="text" id="mgrname" placeholder="Your name" autocomplete="name" value="${esc(S.managers[S.shift]||"")}">
@@ -1033,6 +1047,35 @@ function askEndpoint(){
      {label:"Close", fn:closeSheet}]);
 }
 
+/* ================= store bulletin ================= */
+let BULLETINS = [];
+try{ const b=JSON.parse(localStorage.getItem(BKEY)||"null"); if(b && Array.isArray(b.items)) BULLETINS=b.items; }catch(e){}
+
+async function loadBulletins(){
+  if(!CFG.endpoint || !CODE || !STORE) return;
+  try{
+    const url = CFG.endpoint+"?action=bulletin&code="+encodeURIComponent(CODE)+"&store="+encodeURIComponent(STORE.name);
+    const j = await (await fetch(url,{redirect:"follow"})).json();
+    if(!j.ok) return;
+    BULLETINS = j.bulletins||[];
+    try{ localStorage.setItem(BKEY, JSON.stringify({at:Date.now(), items:BULLETINS})); }catch(e){}
+    const box=$("#bulletin"); if(box) box.outerHTML = bulletinHTML();
+  }catch(e){ /* offline — whatever was cached still shows */ }
+}
+
+function prettyPosted(p){
+  return /^\d{4}-\d{2}-\d{2}/.test(p) ? shortDate(p.slice(0,10)) : p;
+}
+function bulletinHTML(){
+  if(!BULLETINS.length) return '<div id="bulletin"></div>';
+  return `<div id="bulletin" class="bulletins">${BULLETINS.map(b=>`
+    <div class="bult">
+      <div class="bult-tag">Store bulletin${b.posted?" &middot; "+esc(prettyPosted(b.posted)):""}</div>
+      ${b.headline?`<div class="bult-h">${esc(b.headline)}</div>`:""}
+      ${b.message?`<div class="bult-m">${esc(b.message)}</div>`:""}
+    </div>`).join("")}</div>`;
+}
+
 /* ================= summary sheet ================= */
 function showSummary(){
   const sid=S.shift, c=counts(S,sid), g=collect(S,sid), rep=buildReport(S,sid);
@@ -1108,6 +1151,7 @@ function renderClosed(){
 let RECENT_CACHE=null;
 function renderRecent(){
   $("#app").innerHTML=`<div class="wrap">
+    ${bulletinHTML()}
     <div class="recenthead">
       <div><b>What's been reported</b><br><span>Every shift at ${esc(STORE?STORE.name:"this store")}, last ${LOOKBACK_DAYS} days</span></div>
       <button class="chip" id="rrefresh">Refresh</button>
@@ -1300,11 +1344,13 @@ wireApp();
 updateQueueChip();
 if(STORE && S.started) renderMain(); else renderSetup();
 flushOutbox(true);
+loadBulletins();
 
 setInterval(()=>{
   if(S.date!==todayKey()){ archiveAll(S); S=blank(); save(); renderSetup(); }
   flushOutbox(true);
 }, 60000);
+setInterval(loadBulletins, 30*60000);   // pick up a new bulletin without reopening the app
 window.addEventListener("online", ()=>flushOutbox(true));
 
 /* the iPad keyboard covers the bottom of the screen — hide the fixed bar while typing */
