@@ -325,6 +325,45 @@ body.typing .footbar{display:none}
 }
 @media(prefers-reduced-motion:reduce){ .news-h.news-in{animation:none} }
 
+/* ---------- Priority Tasks strip (sits under Vista Updates) ---------- */
+.taskstrip{
+  background:#eaf1fb;border:1.5px solid #b3c8e6;border-radius:12px;
+  padding:5px;margin:0 0 10px;overflow:hidden;
+}
+.task-top{
+  display:flex;align-items:center;gap:9px;width:100%;min-height:46px;
+  background:none;border:0;padding:6px 8px;text-align:left;cursor:pointer;
+}
+.task-top:active{transform:scale(.995)}
+.task-tag{font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#fff;
+  background:#1c5aa8;border-radius:999px;padding:5px 11px;flex-shrink:0}
+.task-count{font-size:14px;font-weight:750;color:#14406f;margin-left:auto;white-space:nowrap}
+.task-caret{width:10px;height:10px;flex-shrink:0;margin:-4px 3px 0 1px;
+  border-right:2.5px solid #1c5aa8;border-bottom:2.5px solid #1c5aa8;
+  transform:rotate(45deg);transition:transform .2s,margin .2s}
+.task-caret.up{transform:rotate(-135deg);margin-top:3px}
+.task-list{display:flex;flex-direction:column;gap:6px;padding:1px 3px 4px}
+.task{
+  display:flex;gap:11px;align-items:flex-start;cursor:pointer;
+  background:#fff;border:1px solid #cfdcef;border-radius:10px;
+  padding:11px 12px;min-height:var(--tap);
+}
+.task span{font-size:15px;font-weight:600;line-height:1.35;color:#14406f}
+.task.on{background:#e1ebf8;border-color:#a9c3e4}
+.task.on span{color:#5b7896;text-decoration:line-through;text-decoration-thickness:1.5px}
+.task input{appearance:none;-webkit-appearance:none;width:24px;height:24px;flex-shrink:0;margin:0;
+  border:2px solid #9db9dc;border-radius:7px;background:#fff;position:relative}
+.task input:checked{background:#1c5aa8;border-color:#1c5aa8}
+.task input:checked::after{content:"";position:absolute;left:7px;top:2px;width:5px;height:11px;
+  border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.taskstrip.all{background:#e6f0f9;border-color:#a9c3e4}
+@media(min-width:700px){
+  .task-tag{font-size:12px;padding:5px 12px}
+  .task-count{font-size:15px}
+  .task span{font-size:15.5px}
+  .task-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+}
+
 /* the full text, opened from the strip */
 .bult{border-left-color:#b3271d}
 .bult-tag{color:#b3271d}
@@ -381,6 +420,7 @@ body.typing .footbar{display:none}
       </div>
     </div>
     <button class="newsstrip hidden" id="newsstrip"></button>
+    <div class="taskstrip hidden" id="taskstrip"></div>
     <div class="progress-wrap" id="progress">
       <span class="queue hidden" id="queuechip"></span>
       <div class="bar-label"><span id="pctnum"></span><span id="pctright"></span></div>
@@ -556,7 +596,8 @@ const CONFIG = {
 
 /* ================= constants ================= */
 const KEY="mgr-v4", HKEY="mgr-history-v4", OKEY="mgr-outbox-v4", CKEY="mgr-config-v4",
-      SKEY="mgr-store-v4", CODEKEY="mgr-code-v4", BKEY="mgr-bulletin-v4", TKEY="mgr-tasks-v4";
+      SKEY="mgr-store-v4", CODEKEY="mgr-code-v4", BKEY="mgr-bulletin-v4", TKEY="mgr-tasks-v4",
+      TOPENKEY="mgr-tasksopen-v4";
 const RETAIN_DAYS = 15;
 const LOOKBACK_DAYS = 3;
 const ROUTES = ["Higher Management","HR","Commissary","Maintenance"];
@@ -778,6 +819,7 @@ function renderMain(){
   $("#footbar").classList.remove("hidden");
   renderTabs();
   renderNews();
+  renderTasks();
   if(S.shift===RECENT) renderRecent(); else renderShift();
   refresh();
 }
@@ -811,7 +853,6 @@ function renderShift(){
     <input type="text" id="mgrname" placeholder="Your name" autocomplete="name" value="${esc(S.managers[S.shift]||"")}">
     ${S.sent[S.shift]?`<span class="sentmark">Sent ${new Date(S.sent[S.shift]).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</span>`:""}
   </div>`;
-  html += tasksHTML(S.shift);
 
   def.blocks.forEach((b,bi)=>{
     html += `<section class="block"><h2>${esc(b.time)}</h2>`;
@@ -936,21 +977,6 @@ function wireApp(){
   });
   app.addEventListener("change", e=>{
     const el=e.target;
-    if(el.dataset.task!=null){
-      const k=taskKey(S.shift, el.dataset.task);
-      S.tasks=S.tasks||{};
-      if(el.checked) S.tasks[k]={at:new Date().toISOString(), by:(S.managers||{})[S.shift]||""};
-      else delete S.tasks[k];
-      save();
-      const lab=el.closest(".task"); if(lab) lab.classList.toggle("on", el.checked);
-      const box=el.closest(".tasks");
-      if(box){
-        const list=tasksFor(S.shift), d=list.filter(t=>taskDone(S.shift,t.id)).length;
-        $(".tasks-head b",box).textContent = d+" of "+list.length+" done";
-        box.classList.toggle("all", d===list.length);
-      }
-      return;
-    }
     if(el.dataset.route!=null){
       const [id,i]=el.dataset.route.split(":");
       const en=(drec(id).e||[]).find(x=>String(x.i)===i);
@@ -1178,7 +1204,7 @@ async function loadTasks(){
     if(!j.ok) return;
     TASKS = j.tasks||[];
     try{ localStorage.setItem(TKEY, JSON.stringify({at:Date.now(), items:TASKS})); }catch(e){}
-    if(S.shift!==RECENT) renderMain();
+    renderTasks();
   }catch(e){}
 }
 
@@ -1194,18 +1220,53 @@ function tasksFor(sid){
 function taskKey(sid,id){ return sid+"|"+id; }
 function taskDone(sid,id){ return !!(S.tasks||{})[taskKey(sid,id)]; }
 
-function tasksHTML(sid){
-  const list=tasksFor(sid);
-  if(!list.length) return "";
-  const done=list.filter(t=>taskDone(sid,t.id)).length;
-  return `<div class="tasks${done===list.length?" all":""}">
-    <div class="tasks-head"><span>Priority tasks</span><b>${done} of ${list.length} done</b></div>
-    ${list.map(t=>`
-      <label class="task${taskDone(sid,t.id)?" on":""}" data-taskid="${esc(t.id)}">
-        <input type="checkbox" ${taskDone(sid,t.id)?"checked":""} data-task="${esc(t.id)}">
-        <span>${esc(t.task)}</span>
-      </label>`).join("")}
-  </div>`;
+/* the strip lives in the header, right under Vista Updates, and folds away */
+let TASKS_OPEN = true;
+try{ const v=localStorage.getItem(TOPENKEY); if(v!==null) TASKS_OPEN = v==="1"; }catch(e){}
+function setTasksOpen(v){ TASKS_OPEN=v; try{ localStorage.setItem(TOPENKEY, v?"1":"0"); }catch(e){} }
+
+function renderTasks(){
+  const el=$("#taskstrip"); if(!el) return;
+  const sid=S.shift;
+  const list = (sid===RECENT) ? [] : tasksFor(sid);
+  if(!list.length){ el.classList.add("hidden"); el.innerHTML=""; return; }
+
+  const done=list.filter(t=>taskDone(sid,t.id)).length, all=done===list.length;
+  el.classList.remove("hidden");
+  el.classList.toggle("all", all);
+  el.innerHTML = `
+    <button class="task-top" id="tasktoggle" aria-expanded="${TASKS_OPEN?"true":"false"}">
+      <span class="task-tag">Priority Tasks</span>
+      <span class="task-count">${done} of ${list.length} done${all?" \u2713":""}</span>
+      <span class="task-caret${TASKS_OPEN?" up":""}"></span>
+    </button>
+    <div class="task-list${TASKS_OPEN?"":" hidden"}">
+      ${list.map(t=>`
+        <label class="task${taskDone(sid,t.id)?" on":""}" data-taskid="${esc(t.id)}">
+          <input type="checkbox" ${taskDone(sid,t.id)?"checked":""} data-task="${esc(t.id)}">
+          <span>${esc(t.task)}</span>
+        </label>`).join("")}
+    </div>`;
+}
+
+function wireTasks(){
+  const el=$("#taskstrip"); if(!el) return;
+  el.addEventListener("click", e=>{
+    if(e.target.closest("#tasktoggle")){ setTasksOpen(!TASKS_OPEN); renderTasks(); }
+  });
+  el.addEventListener("change", e=>{
+    const box=e.target; if(box.dataset.task==null) return;
+    markTask(S.shift, box.dataset.task, box.checked);
+    renderTasks();
+  });
+}
+
+function markTask(sid, id, on){
+  const k=taskKey(sid,id);
+  S.tasks=S.tasks||{};
+  if(on) S.tasks[k]={at:new Date().toISOString(), by:(S.managers||{})[sid]||""};
+  else delete S.tasks[k];
+  save();
 }
 
 async function loadBulletins(){
@@ -1546,6 +1607,7 @@ function wireChrome(){
 load();
 wireChrome();
 wireApp();
+wireTasks();
 updateQueueChip();
 if(STORE && S.started) renderMain(); else renderSetup();
 flushOutbox(true);
