@@ -13,20 +13,53 @@ var OFFICE_PASSCODE = "changeme";      // what main office types to open the das
 var STORE_CODE      = "changeme2";     // what each manager types once on their phone
 var RETAIN_DAYS     = 15;              // keep this many days on the live tabs
 var LOOKBACK_DAYS   = 3;               // how far back managers can read on their phones
+
+/* Where the nightly digest goes. Leave a line blank and that department's
+   items fall through to the owner instead. Leave OWNER_EMAIL blank and it
+   goes to whichever Google account owns this script.                     */
+var OWNER_EMAIL  = "";
+var ROUTE_EMAIL  = {
+  "Higher Management": "",
+  "HR":                "",
+  "Commissary":        "",
+  "Maintenance":       ""
+};
+var DIGEST_HOUR  = 22;                 // 22 = 10pm, after the last store closes
+
+/* One code for every store by default. To give each store its own code,
+   fill in the names exactly as they appear in the manager app and they
+   take over from STORE_CODE above.                                       */
+var STORE_CODES = {
+  // "Central":  "",
+  // "Alameda":  "",
+  // "Horizon":  "",
+  // "Urban":    "",
+  // "Doniphan": "",
+  // "Piedras":  "",
+  // "Montana":  ""
+};
 /* ====================================== */
 
 var SHIFTS_SHEET   = "Shifts";
 var BULLETIN_SHEET = "Vista Updates";
 var TASKS_SHEET    = "Priority Tasks";
 var TASKLOG_SHEET  = "Task log";
-var ENTRIES_SHEET = "Entries";
+var ENTRIES_SHEET  = "Entries";
+var MANAGERS_SHEET = "Managers";
 var ARCHIVE_SUFFIX = " (archive)";
 
 var SHIFT_COLS = ["Received","Date","Store","Shift","Manager","Day type",
                   "Departments","Logged","All good","Needs attention","Not covered",
-                  "Issues","Notes","Full report"];
-var ENTRY_COLS = ["Received","Date","Store","Shift","Manager","Time block",
-                  "Department","Dept status","Type","Route to","Detail"];
+                  "Issues","Notes","Walk confirmed","Handoff note","Full report"];
+var ENTRY_COLS = ["Entry ID","Received","Date","Store","Shift","Manager","Time block",
+                  "Department","Dept status","Type","Route to","Detail",
+                  "Handled","Handled at"];
+
+/* The "Managers" tab is the roster managers pick their name from, so the
+   office gets one spelling instead of four.
+   Store  — blank for every store, or one store's name
+   Active — blank or TRUE to show them; FALSE retires them                */
+var MANAGER_COLS = ["Store","Name","Active"];
 
 /* The "Vista Updates" tab is where main office types announcements for managers.
    Store   — leave blank for every store, or type one store's name
@@ -50,27 +83,34 @@ function doPost(e) {
     lock.waitLock(20000);
     var p = JSON.parse(e.postData.contents);
     if (!p || !p.date || !p.shiftId) throw new Error("Missing date or shift");
-    if (String(p.code || "") !== STORE_CODE) return json({ ok: false, error: "bad-code" });
+    if (!codeOk(p.code, p.store)) return json({ ok: false, error: "bad-code" });
 
     var now = new Date();
     var c   = p.counts || {};
+    var wrap = p.wrap || {};
 
     // A resend of the same store+date+shift replaces the earlier one.
-    removeExisting(sheet(SHIFTS_SHEET,  SHIFT_COLS), p);
-    removeExisting(sheet(ENTRIES_SHEET, ENTRY_COLS), p);
+    removeExisting(sheet(SHIFTS_SHEET, SHIFT_COLS), p);
 
     sheet(SHIFTS_SHEET, SHIFT_COLS).appendRow([
       now, p.date, p.store || "", p.shift || "", p.manager || "", p.dayType || "",
       c.total || 0, c.reported || 0, c.good || 0, c.attn || 0, c.skip || 0,
-      c.issues || 0, c.entries || 0, p.report || ""
+      c.issues || 0, c.entries || 0,
+      wrap.done ? "Yes" : "No", wrap.note || "", p.report || ""
     ]);
 
+    /* Anything already marked handled keeps that mark when a shift is resent. */
+    var wasHandled = handledMap(p);
+
     var es = sheet(ENTRIES_SHEET, ENTRY_COLS);
-    (p.entries || []).forEach(function (en) {
+    removeExisting(es, p);
+    (p.entries || []).forEach(function (en, i) {
+      var id = entryId(p, i, en);
       es.appendRow([
-        now, p.date, p.store || "", p.shift || "", p.manager || "",
+        id, now, p.date, p.store || "", p.shift || "", p.manager || "",
         en.block || "", en.department || "", statusWord(en.status),
-        en.type || "", en.route || "", en.text || ""
+        en.type || "", en.route || "", en.text || "",
+        wasHandled[id] ? "Yes" : "", wasHandled[id] || ""
       ]);
     });
 
@@ -98,21 +138,27 @@ function doPost(e) {
 function doGet(e) {
   var p = (e && e.parameter) || {};
 
+  // the roster managers pick their name from
+  if (p.action === "managers") {
+    if (!codeOk(p.code, p.store)) return json({ ok: false, error: "bad-code" });
+    return json({ ok: true, managers: readManagers(String(p.store || "")) });
+  }
+
   // the priority tasks office wants ticked off
   if (p.action === "tasks") {
-    if (String(p.code || "") !== STORE_CODE) return json({ ok: false, error: "bad-code" });
+    if (!codeOk(p.code, p.store)) return json({ ok: false, error: "bad-code" });
     return json({ ok: true, tasks: readTasks(String(p.store || "")) });
   }
 
   // the bulletin managers see at the top of their shift
   if (p.action === "bulletin") {
-    if (String(p.code || "") !== STORE_CODE) return json({ ok: false, error: "bad-code" });
+    if (!codeOk(p.code, p.store)) return json({ ok: false, error: "bad-code" });
     return json({ ok: true, bulletins: readBulletins(String(p.store || "")) });
   }
 
   // managers reading the last few days for their own store, from their phone
   if (p.action === "recent") {
-    if (String(p.code || "") !== STORE_CODE) return json({ ok: false, error: "bad-code" });
+    if (!codeOk(p.code, p.store)) return json({ ok: false, error: "bad-code" });
     var days  = Math.min(Number(p.days) || LOOKBACK_DAYS, RETAIN_DAYS);
     var store = String(p.store || "");
     var cut = new Date(); cut.setHours(0,0,0,0); cut.setDate(cut.getDate() - (days - 1));
@@ -133,9 +179,20 @@ function doGet(e) {
     });
   }
 
+  if (p.action === "handle") {
+    return json(markHandled(p.pass, String(p.ids || "").split(",").filter(String),
+                            String(p.on || "1") !== "0"));
+  }
+
   if (p.action === "data") {
     if (String(p.pass || "") !== OFFICE_PASSCODE) return json({ ok: false, error: "Wrong passcode" });
-    return json({ ok: true, days: RETAIN_DAYS, shifts: readAll(SHIFTS_SHEET), entries: readAll(ENTRIES_SHEET) });
+    var all = String(p.all || "") === "1";      // reach back into the archive tabs too
+    var sh = readAll(SHIFTS_SHEET), en = readAll(ENTRIES_SHEET);
+    if (all) {
+      sh = readAll(SHIFTS_SHEET  + ARCHIVE_SUFFIX).concat(sh);
+      en = readAll(ENTRIES_SHEET + ARCHIVE_SUFFIX).concat(en);
+    }
+    return json({ ok: true, days: all ? 0 : RETAIN_DAYS, archived: all, shifts: sh, entries: en });
   }
 
   return HtmlService.createHtmlOutputFromFile("Office")
@@ -156,9 +213,10 @@ function purgeOld() {
     cutoff.setHours(0, 0, 0, 0);
     cutoff.setDate(cutoff.getDate() - RETAIN_DAYS);
 
+    var dcol = 0; rows[0].forEach(function (h, i) { if (String(h).trim() === "Date") dcol = i; });
     var keep = [], move = [];
     for (var i = 1; i < rows.length; i++) {
-      var d = asDate(rows[i][1]);
+      var d = asDate(rows[i][dcol]);
       (d && d < cutoff ? move : keep).push(rows[i]);
     }
     if (!move.length) return;
@@ -180,6 +238,179 @@ function setupDailyPurge() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Closing the loop — one digest a night, and a Handled mark            */
+/* ------------------------------------------------------------------ */
+
+/** Stable id so a resent shift keeps whatever the office already handled. */
+function entryId(p, i, en) {
+  var s = [p.store || "", p.date, p.shiftId || p.shift || "", i,
+           en.department || "", en.type || "", en.text || ""].join("|");
+  var h = 0;
+  for (var k = 0; k < s.length; k++) { h = ((h << 5) - h + s.charCodeAt(k)) | 0; }
+  return "e" + Math.abs(h).toString(36);
+}
+
+function handledMap(p) {
+  var out = {};
+  readAll(ENTRIES_SHEET).forEach(function (r) {
+    if (!sameDay(r.Date, p.date)) return;
+    if (String(r.Store) !== String(p.store || "")) return;
+    if (String(r.Shift) !== String(p.shift || "")) return;
+    if (r.Handled) out[String(r["Entry ID"])] = r["Handled at"] || "Yes";
+  });
+  return out;
+}
+
+/** Office ticks something off. Gated by the office passcode, not the store code. */
+function markHandled(pass, ids, on) {
+  if (String(pass || "") !== OFFICE_PASSCODE) return { ok: false, error: "Wrong passcode" };
+  var sh = sheet(ENTRIES_SHEET, ENTRY_COLS);
+  if (sh.getLastRow() < 2) return { ok: true, changed: 0 };
+
+  var c = colIndex(sh);
+  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).getValues();
+  var want = {}; (ids || []).forEach(function (id) { want[String(id)] = 1; });
+  var stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+  var n = 0;
+
+  rows.forEach(function (r, i) {
+    if (!want[String(r[c["Entry ID"]])]) return;
+    sh.getRange(i + 2, c["Handled"] + 1).setValue(on ? "Yes" : "");
+    sh.getRange(i + 2, c["Handled at"] + 1).setValue(on ? stamp : "");
+    n++;
+  });
+  return { ok: true, changed: n };
+}
+
+function digestTo(route) {
+  var a = String((ROUTE_EMAIL || {})[route] || "").trim();
+  if (a) return a;
+  return String(OWNER_EMAIL || "").trim() || Session.getEffectiveUser().getEmail();
+}
+
+/** Runs nightly. One email per inbox, covering every store, still-open items only. */
+function sendDigest() {
+  var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  var rows = readAll(ENTRIES_SHEET).filter(function (r) {
+    return sameDay(r.Date, today) && !r.Handled && String(r["Route to"] || "").trim();
+  });
+  var shifts = readAll(SHIFTS_SHEET).filter(function (r) { return sameDay(r.Date, today); });
+
+  /* group first by inbox, then by route, then by store */
+  var byInbox = {};
+  rows.forEach(function (r) {
+    var route = String(r["Route to"]).trim();
+    var to = digestTo(route);
+    byInbox[to] = byInbox[to] || {};
+    byInbox[to][route] = byInbox[to][route] || {};
+    var st = String(r.Store || "no store");
+    (byInbox[to][route][st] = byInbox[to][route][st] || []).push(r);
+  });
+
+  var missing = shiftsMissing(shifts);
+  var owner = String(OWNER_EMAIL || "").trim() || Session.getEffectiveUser().getEmail();
+  if (missing.length && !byInbox[owner]) byInbox[owner] = {};
+
+  Object.keys(byInbox).forEach(function (to) {
+    var L = [], count = 0;
+    Object.keys(byInbox[to]).sort().forEach(function (route) {
+      L.push(route.toUpperCase());
+      L.push(new Array(route.length + 1).join("="));
+      Object.keys(byInbox[to][route]).sort().forEach(function (store) {
+        L.push("");
+        L.push("  " + store);
+        byInbox[to][route][store].forEach(function (r) {
+          count++;
+          L.push("    [" + r.Type + "] " + r.Department + " — " + r.Detail);
+          L.push("        " + r.Shift + ", " + (r.Manager || "no name"));
+        });
+      });
+      L.push("");
+      L.push("");
+    });
+
+    if (to === owner && missing.length) {
+      L.push("SHIFTS THAT NEVER CAME IN");
+      L.push("=========================");
+      missing.forEach(function (m) { L.push("  " + m); });
+      L.push("");
+    }
+
+    if (!L.length) return;
+    L.push("Mark things handled on the office dashboard so they drop off tomorrow's email.");
+
+    MailApp.sendEmail(to,
+      "Manager log — " + today + (count ? " — " + count + " open item" + (count === 1 ? "" : "s") : ""),
+      L.join("\n"));
+  });
+}
+
+/** Which store/shift combinations never arrived today. */
+function shiftsMissing(shifts) {
+  var expect = ["Opening Manager", "2nd Shift Manager", "Closing Manager"];
+  var stores = {};
+  readAll(SHIFTS_SHEET).forEach(function (r) { if (r.Store) stores[r.Store] = 1; });
+  var seen = {};
+  shifts.forEach(function (r) { seen[r.Store + "||" + r.Shift] = 1; });
+  var out = [];
+  Object.keys(stores).sort().forEach(function (st) {
+    expect.forEach(function (sh) {
+      if (!seen[st + "||" + sh]) out.push(st + " — " + sh);
+    });
+  });
+  return out;
+}
+
+/** Run this ONCE from the editor to schedule the nightly digest. */
+function setupDigest() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === "sendDigest") ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger("sendDigest").timeBased().everyDays(1).atHour(DIGEST_HOUR).create();
+}
+
+/* ------------------------------------------------------------------ */
+/* The roster managers pick their name from                             */
+/* ------------------------------------------------------------------ */
+function readManagers(store) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(MANAGERS_SHEET);
+  if (!sh) { sheet(MANAGERS_SHEET, MANAGER_COLS); return []; }
+  if (sh.getLastRow() < 2) return [];
+
+  var rows = sh.getDataRange().getValues();
+  var head = rows.shift(), col = {};
+  head.forEach(function (h, i) { col[String(h).trim()] = i; });
+
+  var out = [];
+  rows.forEach(function (r) {
+    var name = String(r[col["Name"]] || "").trim();
+    if (!name) return;
+    var active = String(r[col["Active"]] === undefined ? "" : r[col["Active"]]).trim().toLowerCase();
+    if (active === "false" || active === "no" || active === "0") return;
+    var forStore = String(r[col["Store"]] || "").trim();
+    if (forStore && store && forStore !== store) return;
+    if (out.indexOf(name) < 0) out.push(name);
+  });
+  return out.slice(0, 40);
+}
+
+function setupManagerSheet() { sheet(MANAGERS_SHEET, MANAGER_COLS); }
+
+/** Which code this store expects. Falls back to the one shared code. */
+function codeOk(code, store) {
+  var want = String((STORE_CODES || {})[String(store || "").trim()] || "").trim();
+  if (!want) {
+    /* store names in the app may be bare ("Alameda") or full ("Vista Market — Alameda") */
+    Object.keys(STORE_CODES || {}).forEach(function (k) {
+      if (!want && k && String(store || "").indexOf(k) >= 0) want = String(STORE_CODES[k] || "").trim();
+    });
+  }
+  if (!want) want = STORE_CODE;
+  return String(code || "") === want;
+}
+
+/* ------------------------------------------------------------------ */
 /* helpers                                                             */
 /* ------------------------------------------------------------------ */
 function sheet(name, cols) {
@@ -194,12 +425,20 @@ function sheet(name, cols) {
   return sh;
 }
 
+function colIndex(sh) {
+  var head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0], m = {};
+  head.forEach(function (h, i) { m[String(h).trim()] = i; });
+  return m;
+}
+
 function removeExisting(sh, p) {
   var rows = sh.getDataRange().getValues();
+  if (rows.length < 2) return;
+  var c = {}; rows[0].forEach(function (h, i) { c[String(h).trim()] = i; });
   for (var i = rows.length - 1; i >= 1; i--) {
-    if (sameDay(rows[i][1], p.date) &&
-        String(rows[i][2]) === String(p.store || "") &&
-        String(rows[i][3]) === String(p.shift || "")) {
+    if (sameDay(rows[i][c["Date"]], p.date) &&
+        String(rows[i][c["Store"]]) === String(p.store || "") &&
+        String(rows[i][c["Shift"]]) === String(p.shift || "")) {
       sh.deleteRow(i + 1);
     }
   }
