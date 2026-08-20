@@ -299,19 +299,28 @@ body.typing .footbar{display:none}
 
 /* ---------- Vista Updates strip ---------- */
 .newsstrip{
-  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
-  background:var(--blue-soft);border:1px solid #d3e0ec;border-radius:10px;
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;overflow:hidden;
+  background:#fdecea;border:1px solid #f0c7c2;border-radius:10px;
   padding:8px 12px;margin:0 0 9px;min-height:40px;
 }
 .newsstrip:active{transform:scale(.995)}
-.news-tag{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);
-  background:#fff;border-radius:999px;padding:3px 8px;flex-shrink:0}
-.news-h{flex:1;min-width:0;font-size:13.5px;font-weight:650;color:#22405a;
+.news-tag{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;
+  background:#b3271d;border-radius:999px;padding:3px 9px;flex-shrink:0}
+.news-h{flex:1;min-width:0;font-size:13.5px;font-weight:650;color:#8c231b;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.news-more{font-size:11px;font-weight:800;color:#fff;background:var(--blue);border-radius:999px;padding:2px 7px;flex-shrink:0}
-.news-caret{width:8px;height:8px;border-right:2px solid var(--blue);border-bottom:2px solid var(--blue);
+.news-h.news-in{animation:newsIn .32s ease}
+@keyframes newsIn{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+.news-dots{display:flex;gap:4px;flex-shrink:0}
+.news-dots i{width:5px;height:5px;border-radius:99px;background:#e0aaa4;display:block;transition:background .2s}
+.news-dots i.on{background:#b3271d}
+.news-caret{width:8px;height:8px;border-right:2px solid #b3271d;border-bottom:2px solid #b3271d;
   transform:rotate(-45deg);flex-shrink:0;margin-right:2px}
 @media(min-width:900px){ .news-h{font-size:14.5px} .newsstrip{min-height:44px;padding:9px 14px} }
+@media(prefers-reduced-motion:reduce){ .news-h.news-in{animation:none} }
+
+/* the full text, opened from the strip */
+.bult{border-left-color:#b3271d}
+.bult-tag{color:#b3271d}
 </style>
 </head>
 <body>
@@ -520,6 +529,7 @@ const STATUS = {
 };
 const RECENT = "recent";
 const NEWS_NAME = "Vista Updates";
+const NEWS_MS = 3000;   // how long each update sits on screen before the next one
 
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
@@ -1085,15 +1095,30 @@ function prettyPosted(p){
   return /^\d{4}-\d{2}-\d{2}/.test(p) ? shortDate(p.slice(0,10)) : p;
 }
 
+let NEWS_I=0, NEWS_TIMER=null;
+
 function renderNews(){
   const el=$("#newsstrip"); if(!el) return;
+  if(NEWS_TIMER){ clearInterval(NEWS_TIMER); NEWS_TIMER=null; }
   if(!BULLETINS.length){ el.classList.add("hidden"); el.innerHTML=""; return; }
-  const first=BULLETINS[0];
-  const extra=BULLETINS.length-1;
+  if(NEWS_I >= BULLETINS.length) NEWS_I=0;
   el.classList.remove("hidden");
+  paintNews(false);
+  if(BULLETINS.length>1){
+    NEWS_TIMER=setInterval(()=>{
+      if(document.hidden || $("#sheet")) return;      // don't rotate behind a dialog or in the background
+      NEWS_I=(NEWS_I+1)%BULLETINS.length;
+      paintNews(true);
+    }, NEWS_MS);
+  }
+}
+
+function paintNews(animate){
+  const el=$("#newsstrip"); if(!el) return;
+  const b=BULLETINS[NEWS_I]||{};
   el.innerHTML = `<span class="news-tag">${esc(NEWS_NAME)}</span>
-    <span class="news-h">${esc(first.headline || first.message || "")}</span>
-    ${extra?`<span class="news-more">+${extra}</span>`:""}
+    <span class="news-h${animate?" news-in":""}">${esc(b.headline || b.message || "")}</span>
+    ${BULLETINS.length>1?`<span class="news-dots">${BULLETINS.map((_,i)=>`<i class="${i===NEWS_I?"on":""}"></i>`).join("")}</span>`:""}
     <span class="news-caret"></span>`;
 }
 
