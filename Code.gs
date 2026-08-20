@@ -17,6 +17,8 @@ var LOOKBACK_DAYS   = 3;               // how far back managers can read on thei
 
 var SHIFTS_SHEET   = "Shifts";
 var BULLETIN_SHEET = "Vista Updates";
+var TASKS_SHEET    = "Priority Tasks";
+var TASKLOG_SHEET  = "Task log";
 var ENTRIES_SHEET = "Entries";
 var ARCHIVE_SUFFIX = " (archive)";
 
@@ -31,6 +33,13 @@ var ENTRY_COLS = ["Received","Date","Store","Shift","Manager","Time block",
    Starts / Ends — leave blank for "show it now, until I turn it off"
    Active  — leave blank or type TRUE to show it; FALSE hides it          */
 var BULLETIN_COLS = ["Posted","Store","Headline","Message","Starts","Ends","Active"];
+
+/* The "Priority Tasks" tab is the must-do list office sets for managers.
+   Store  — blank for every store, or one store's name
+   Shift  — blank for every shift, or Opening / 2nd Shift / Closing
+   Active — blank or TRUE to show it; FALSE retires it                   */
+var TASKS_COLS   = ["Posted","Store","Shift","Task","Active"];
+var TASKLOG_COLS = ["Received","Date","Store","Shift","Manager","Task","Done","Marked at"];
 
 /* ------------------------------------------------------------------ */
 /* Receiving a submitted shift                                         */
@@ -47,8 +56,8 @@ function doPost(e) {
     var c   = p.counts || {};
 
     // A resend of the same store+date+shift replaces the earlier one.
-    removeExisting(sheet(SHIFTS_SHEET,  SHIFT_COLS), p, [2,3,4]);
-    removeExisting(sheet(ENTRIES_SHEET, ENTRY_COLS), p, [2,3,4]);
+    removeExisting(sheet(SHIFTS_SHEET,  SHIFT_COLS), p);
+    removeExisting(sheet(ENTRIES_SHEET, ENTRY_COLS), p);
 
     sheet(SHIFTS_SHEET, SHIFT_COLS).appendRow([
       now, p.date, p.store || "", p.shift || "", p.manager || "", p.dayType || "",
@@ -65,7 +74,17 @@ function doPost(e) {
       ]);
     });
 
-    return json({ ok: true, saved: (p.entries || []).length });
+    var tasks = p.tasks || [];
+    if (tasks.length) {
+      var ts = sheet(TASKLOG_SHEET, TASKLOG_COLS);
+      removeExisting(ts, p);
+      tasks.forEach(function (t) {
+        ts.appendRow([now, p.date, p.store || "", p.shift || "", p.manager || "",
+                      t.task || "", t.done ? "Done" : "Not done", t.at || ""]);
+      });
+    }
+
+    return json({ ok: true, saved: (p.entries || []).length, tasks: tasks.length });
   } catch (err) {
     return json({ ok: false, error: String(err && err.message || err) });
   } finally {
@@ -78,6 +97,12 @@ function doPost(e) {
 /* ------------------------------------------------------------------ */
 function doGet(e) {
   var p = (e && e.parameter) || {};
+
+  // the priority tasks office wants ticked off
+  if (p.action === "tasks") {
+    if (String(p.code || "") !== STORE_CODE) return json({ ok: false, error: "bad-code" });
+    return json({ ok: true, tasks: readTasks(String(p.store || "")) });
+  }
 
   // the bulletin managers see at the top of their shift
   if (p.action === "bulletin") {
@@ -169,7 +194,7 @@ function sheet(name, cols) {
   return sh;
 }
 
-function removeExisting(sh, p, cols) {
+function removeExisting(sh, p) {
   var rows = sh.getDataRange().getValues();
   for (var i = rows.length - 1; i >= 1; i--) {
     if (sameDay(rows[i][1], p.date) &&
@@ -213,6 +238,45 @@ function readAll(name) {
     return o;
   });
 }
+
+function taskId(store, shift, task) {
+  var s = String(store || "") + "|" + String(shift || "") + "|" + String(task || "");
+  var h = 0;
+  for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return "t" + Math.abs(h).toString(36);
+}
+
+function readTasks(store) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(TASKS_SHEET);
+  if (!sh) { sheet(TASKS_SHEET, TASKS_COLS); return []; }
+  if (sh.getLastRow() < 2) return [];
+
+  var rows = sh.getDataRange().getValues();
+  var head = rows.shift();
+  var col  = {};
+  head.forEach(function (h, i) { col[String(h).trim()] = i; });
+
+  var out = [];
+  rows.forEach(function (r) {
+    var task = String(r[col["Task"]] || "").trim();
+    if (!task) return;
+
+    var active = String(r[col["Active"]] === undefined ? "" : r[col["Active"]]).trim().toLowerCase();
+    if (active === "false" || active === "no" || active === "0") return;
+
+    var forStore = String(r[col["Store"]] || "").trim();
+    if (forStore && store && forStore !== store) return;
+
+    var forShift = String(r[col["Shift"]] || "").trim();
+    out.push({ id: taskId(forStore, forShift, task), task: task, shift: forShift, store: forStore });
+  });
+
+  return out.slice(0, 12);
+}
+
+/** Run once from the editor to create the Priority Tasks tab before your first entry. */
+function setupTaskSheet() { sheet(TASKS_SHEET, TASKS_COLS); }
 
 function readBulletins(store) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
