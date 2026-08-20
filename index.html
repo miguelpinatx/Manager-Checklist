@@ -16,6 +16,7 @@
   --blue:#25567f; --blue-soft:#e9f0f6;
   --plum:#6b4a7a; --plum-soft:#f2ecf5;
   --clay:#7a4a12; --clay-soft:#f6eede;
+  --slate:#45525c; --slate-soft:#eceff1;
   --radius:14px; --shadow:0 1px 2px rgba(28,31,29,.05),0 4px 14px rgba(28,31,29,.045); --tap:44px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -35,10 +36,10 @@ header.top{position:sticky;top:0;z-index:50;background:rgba(246,245,242,.94);bac
 .top-actions{display:flex;gap:6px;flex-shrink:0}
 .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 13px;font-size:13px;font-weight:600;color:var(--ink-2);min-height:38px;display:inline-flex;align-items:center;white-space:nowrap}
 .chip:active{transform:scale(.97)}
-.progress-wrap{padding-bottom:10px}
-.bar{height:7px;background:#e3e1db;border-radius:99px;overflow:hidden}
+.progress-wrap{padding-bottom:9px}
+.bar{display:none}
 .bar>i{display:block;height:100%;width:0;background:var(--green);border-radius:99px;transition:width .25s}
-.bar-label{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-variant-numeric:tabular-nums}
+.bar-label{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .bar-label b{color:var(--ink);font-weight:700}
 .queue{display:block;text-align:center;font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-soft);border-radius:8px;padding:5px;margin-bottom:8px}
 
@@ -75,8 +76,9 @@ header.top{position:sticky;top:0;z-index:50;background:rgba(246,245,242,.94);bac
 .dept-head .nm{font-weight:700;letter-spacing:-.01em;flex:1;min-width:0;font-size:16px}
 .dept-head .mins{font-size:12px;color:var(--ink-3);font-weight:600;flex-shrink:0}
 .pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:5px 10px;flex-shrink:0;white-space:nowrap}
-.pill.s-none{background:#f1efe9;color:var(--ink-3)}
-.pill.s-good{background:var(--green-soft);color:var(--green)}
+.pill.s-blank{display:none}
+.pill.s-note{background:var(--blue-soft);color:var(--blue)}
+.pill.s-shift{background:var(--green-soft);color:var(--green)}
 .pill.s-attn{background:var(--amber-soft);color:var(--amber)}
 .pill.s-skip{background:var(--red-soft);color:var(--red)}
 .caret{width:10px;height:10px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(45deg);transition:transform .2s;flex-shrink:0;margin-top:-4px}
@@ -95,9 +97,8 @@ header.top{position:sticky;top:0;z-index:50;background:rgba(246,245,242,.94);bac
 .guide li.gh{list-style:none;margin-left:-16px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding-top:9px}
 
 /* status */
-.statusrow{display:flex;gap:7px;margin-bottom:13px}
+.statusrow{display:flex;gap:8px;margin-bottom:13px}
 .st{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 6px;font-size:13px;font-weight:700;color:var(--ink-2);min-height:46px;line-height:1.2}
-.st.on.st-good{background:var(--green);border-color:var(--green);color:#fff}
 .st.on.st-attn{background:var(--amber);border-color:var(--amber);color:#fff}
 .st.on.st-skip{background:var(--red);border-color:var(--red);color:#fff}
 
@@ -115,6 +116,7 @@ header.top{position:sticky;top:0;z-index:50;background:rgba(246,245,242,.94);bac
 .entry .del{width:34px;height:34px;border-radius:9px;font-size:19px;color:var(--ink-3);flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .entry textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;resize:vertical;min-height:70px;font-size:15px;line-height:1.4;background:#fff}
 .entry textarea:focus{outline:2px solid var(--green);outline-offset:-1px;border-color:transparent}
+.e-note{border-left-color:var(--slate)} .e-note .etype{background:var(--slate-soft);color:var(--slate)}
 .e-issue{border-left-color:var(--red)} .e-issue .etype{background:var(--red-soft);color:var(--red)}
 .e-concern{border-left-color:var(--amber)} .e-concern .etype{background:var(--amber-soft);color:var(--amber)}
 .e-win{border-left-color:var(--green)} .e-win .etype{background:var(--green-soft);color:var(--green)}
@@ -125,6 +127,7 @@ header.top{position:sticky;top:0;z-index:50;background:rgba(246,245,242,.94);bac
 .addrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}
 .add{border:1.5px dashed #cfccc3;background:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;color:var(--ink-2);min-height:40px}
 .add:active{transform:scale(.97)}
+.a-note{color:var(--slate);border-color:#c9cfd4}
 .a-issue{color:var(--red);border-color:#e3c4c1}
 .a-concern{color:var(--amber);border-color:#e8d3b2}
 .a-win{color:var(--green);border-color:#bcd6c8}
@@ -324,6 +327,27 @@ body.typing .footbar{display:none}
   .news-tag{font-size:12px;padding:5px 12px}
 }
 @media(prefers-reduced-motion:reduce){ .news-h.news-in{animation:none} }
+
+/* ---------- yesterday, on the start screen ---------- */
+.yday{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:13px 14px;margin-bottom:22px}
+.yd-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.yd-tag{font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#fff;
+  background:var(--ink);border-radius:999px;padding:5px 11px;flex-shrink:0}
+.yd-when{font-size:13px;color:var(--ink-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yd-body{max-height:38vh;overflow:hidden;position:relative}
+.yday.all .yd-body{max-height:none}
+.yday:not(.all) .yd-body::after{content:"";position:absolute;left:0;right:0;bottom:0;height:64px;
+  background:linear-gradient(rgba(255,255,255,0),#fff)}
+.yd-shift{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.yd-shift:first-child{border-top:0;padding-top:0;margin-top:0}
+.yd-head{display:flex;align-items:baseline;gap:9px;margin-bottom:5px}
+.yd-head b{font-size:14px;letter-spacing:-.01em}
+.yd-head span{font-size:12.5px;color:var(--ink-2)}
+.yd-rep{margin:0;white-space:pre-wrap;word-break:break-word;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink-2)}
+.yd-more{width:100%;margin-top:10px;border:1px solid var(--line);background:#faf9f6;border-radius:10px;
+  padding:10px;font-size:13.5px;font-weight:700;color:var(--ink-2);min-height:var(--tap)}
+@media(min-width:700px){ .yd-rep{font-size:12.5px} .yd-body{max-height:44vh} }
 
 /* ---------- Priority Tasks strip (sits under Vista Updates) ---------- */
 .taskstrip{
@@ -602,17 +626,21 @@ const RETAIN_DAYS = 15;
 const LOOKBACK_DAYS = 3;
 const ROUTES = ["Higher Management","HR","Commissary","Maintenance"];
 const TYPES = {
+  note:    {label:"Note",            short:"Note",     routed:false, hint:"Anything worth writing down for the office."},
   issue:   {label:"Issue",           short:"Issue",    routed:true,  hint:"What's wrong, how bad, and what you need."},
   concern: {label:"Concern",         short:"Concern",  routed:true,  hint:"Not a problem yet, but trending the wrong way."},
   win:     {label:"Win",             short:"Win",      routed:false, hint:"What went well — and who deserves the credit."},
   product: {label:"Product & waste", short:"Product",  routed:true,  hint:"Ran out, thrown away, over-produced, order needs adjusting."},
   staffing:{label:"Staffing",        short:"Staffing", routed:true,  hint:"Call-outs, coverage, coaching given, uniform and hygiene."}
 };
-const TYPE_ORDER = ["issue","concern","product","staffing","win"];
+const TYPE_ORDER = ["note","issue","concern","product","staffing","win"];
+/* who each kind of note goes to unless the manager changes it */
+const DEFAULT_ROUTE = { issue:"Higher Management", concern:"Higher Management",
+                        product:"Commissary", staffing:"HR" };
+/* Only exceptions get marked. A department left blank was walked and was fine. */
 const STATUS = {
-  good:{label:"All good",        short:"All good"},
-  attn:{label:"Needs attention", short:"Attention"},
-  skip:{label:"Didn't get to it",short:"Not covered"}
+  attn:{label:"Needs attention", short:"Needs attention"},
+  skip:{label:"Didn't get to it",short:"Didn't get to it"}
 };
 const RECENT = "recent";
 const NEWS_NAME = "Vista Updates";
@@ -732,20 +760,65 @@ function drec(id){ return S.depts[id] || (S.depts[id]={s:null,e:[]}); }
 
 function counts(st,sid){
   st=st||S; sid=sid||st.shift;
-  let total=0,good=0,attn=0,skip=0,entries=0,issues=0;
+  let total=0,attn=0,skip=0,entries=0,issues=0,noted=0;
   deptList(st,sid).forEach(({id})=>{
     total++;
     const r=(st.depts||{})[id]||{};
-    if(r.s==="good")good++; else if(r.s==="attn")attn++; else if(r.s==="skip")skip++;
-    (r.e||[]).forEach(en=>{ if((en.x||"").trim()){ entries++; if(en.t==="issue") issues++; } });
+    if(r.s==="attn")attn++; else if(r.s==="skip")skip++;
+    let n=0;
+    (r.e||[]).forEach(en=>{ if((en.x||"").trim()){ n++; entries++; if(en.t==="issue") issues++; } });
+    if(n||r.s) noted++;
   });
-  const reported=good+attn+skip;
-  return {total,good,attn,skip,entries,issues,reported,pct: total?Math.round(reported/total*100):0};
+  const flagged=attn+skip;
+  /* "good" is what nobody had to flag — kept so the office sheet keeps its shape */
+  const good=total-flagged;
+  return {total,good,attn,skip,flagged,noted,entries,issues,
+          reported:noted, pct: total?Math.round(noted/total*100):0};
 }
 function hasContent(st,sid){
   st=st||S;
   const c=counts(st,sid);
   return c.reported>0 || c.entries>0;
+}
+
+/* ================= yesterday, for whoever opens up ================= */
+/* Reads this device's own archive. The day is filed either when somebody closes
+   it out or automatically the first time the app opens on a new date. */
+function lastDay(){
+  const h=pruneHistory().filter(e=> e.date < todayKey());
+  if(!h.length) return null;
+  const date=h.map(e=>e.date).sort().pop();
+  const rows=h.filter(e=>e.date===date);
+  rows.sort((a,b)=> SHIFT_IDS.indexOf(a.shiftId) - SHIFT_IDS.indexOf(b.shiftId));
+  return {date, rows};
+}
+
+function yesterdayHTML(){
+  const y=lastDay(); if(!y) return "";
+  const when = daysBetween(y.date, todayKey())===1 ? "Yesterday" : shortDate(y.date);
+  const body = y.rows.map(r=>
+    `<div class="yd-shift">
+       <div class="yd-head"><b>${esc(r.shift)}</b><span>${esc(r.manager||"no name")}</span></div>
+       <pre class="yd-rep">${esc(r.report)}</pre>
+     </div>`).join("");
+  return `<div class="yday" id="yday">
+    <div class="yd-top">
+      <span class="yd-tag">${esc(when)}</span>
+      <span class="yd-when">${esc(shortDate(y.date))} &middot; ${y.rows.length} shift${y.rows.length>1?"s":""}</span>
+    </div>
+    <div class="yd-body" id="ydbody">${body}</div>
+    <button class="yd-more" id="ydmore">Read the whole day</button>
+  </div>`;
+}
+
+function wireYesterday(){
+  const more=$("#ydmore"); if(!more) return;
+  const body=$("#ydbody"), card=$("#yday");
+  if(body.scrollHeight <= body.clientHeight + 8){ more.classList.add("hidden"); card.classList.add("all"); return; }
+  more.addEventListener("click",()=>{
+    card.classList.add("all");
+    more.classList.add("hidden");
+  });
 }
 
 /* ================= setup screen ================= */
@@ -772,6 +845,8 @@ function renderSetup(){
       <p class="hint">One time only, on this phone. It's what lets this phone send reports and read the last few days.</p>
     </div>`}
 
+    ${yesterdayHTML()}
+
     <div class="field">
       <label>What kind of day is it?</label>
       <div class="toggle-row" id="daytoggles">
@@ -786,6 +861,8 @@ function renderSetup(){
     ${h.length?`<button class="primary ghost" id="pastbtn" style="margin-top:10px">This phone's past days (${h.length})</button>`:""}
     <p class="hint" style="margin-top:16px">All three shifts live on one screen — tap between them at the top. Nothing to tick off: walk the store, and write down what's worth telling somebody.</p>
   </div>`;
+
+  wireYesterday();
 
   $$("#storepick .shift-btn").forEach(b=>b.addEventListener("click",()=>{
     $$("#storepick .shift-btn").forEach(x=>x.classList.remove("on"));
@@ -888,7 +965,7 @@ function deptHTML(d,bi,di){
     <button class="dept-head" data-open="${id}">
       <span class="nm">${esc(d.name)}</span>
       ${d.mins?`<span class="mins">${d.mins} min</span>`:""}
-      <span class="pill s-${r.s||"none"}" data-pill="${id}">${r.s?STATUS[r.s].short:"Not yet"}</span>
+      <span class="pill ${r.s?"s-"+r.s:"s-blank"}" data-pill="${id}">${r.s?STATUS[r.s].short:""}</span>
       <span class="caret"></span>
     </button>
     <div class="dept-body${open?"":" hidden"}">
@@ -947,10 +1024,10 @@ function wireApp(){
     }
     if(t.dataset.add){
       const [id,type]=t.dataset.add.split(":"); const r=drec(id);
-      const en={i:S.seq++, t:type, r:TYPES[type].routed?(type==="staffing"?"HR":"Higher Management"):"", x:""};
+      const en={i:S.seq++, t:type, r:TYPES[type].routed?(DEFAULT_ROUTE[type]||"Higher Management"):"", x:""};
       r.e.push(en);
-      if(!r.s) r.s=(type==="win"?"good":"attn");
-      else if((type==="issue"||type==="concern") && r.s==="good") r.s="attn";
+      /* only a problem raises a flag — a note, a product line or a win leaves the card alone */
+      if(!r.s && (type==="issue"||type==="concern")) r.s="attn";
       save();
       $(`[data-entries="${id}"]`).insertAdjacentHTML("beforeend", entryHTML(id,en));
       const card=t.closest(".dept");
@@ -1015,19 +1092,21 @@ function refresh(){
   $("#footbar").classList.remove("hidden");
 
   const c=counts();
-  $("#pctnum").innerHTML=`<b>${c.reported}</b> of ${c.total} departments logged`;
+  const flags=[];
+  if(c.attn) flags.push(`<b>${c.attn}</b> need${c.attn>1?"":"s"} attention`);
+  if(c.skip) flags.push(`<b>${c.skip}</b> not covered`);
+  $("#pctnum").innerHTML = flags.join(" &middot; ") || "Nothing flagged so far";
   const bits=[];
   if(c.issues) bits.push(c.issues+" issue"+(c.issues>1?"s":""));
   if(c.entries) bits.push(c.entries+" note"+(c.entries>1?"s":""));
-  $("#pctright").textContent = bits.join(" · ") || "nothing logged yet";
-  $("#barfill").style.width=c.pct+"%";
+  $("#pctright").textContent = bits.join(" · ") || "";
 
   deptList().forEach(({id})=>{
     const p=$(`[data-pill="${id}"]`); if(!p) return;
     const r=S.depts[id]||{};
     const n=(r.e||[]).filter(x=>(x.x||"").trim()).length;
-    p.className="pill s-"+(r.s||"none");
-    p.textContent=(r.s?STATUS[r.s].short:"Not yet")+(n?" · "+n:"");
+    p.className = "pill " + (r.s ? "s-"+r.s : (n ? "s-note" : "s-blank"));
+    p.textContent = r.s ? STATUS[r.s].short+(n?" · "+n:"") : (n ? n+" note"+(n>1?"s":"") : "");
   });
 
   renderTabs();
@@ -1039,7 +1118,7 @@ function refresh(){
 /* ================= report ================= */
 function collect(st,sid){
   st=st||S; sid=sid||st.shift;
-  const out={issues:[],concern:[],win:[],product:[],staffing:[],skipped:[]};
+  const out={issues:[],note:[],concern:[],win:[],product:[],staffing:[],skipped:[]};
   deptList(st,sid).forEach(({d,id,block})=>{
     const r=(st.depts||{})[id]||{};
     if(r.s==="skip") out.skipped.push(d.name);
@@ -1065,7 +1144,12 @@ function buildReport(st,sid){
   if(mgr) L.push("Manager: "+mgr);
   const dt=[st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean);
   if(dt.length) L.push("Day type: "+dt.join(", "));
-  L.push("Departments logged: "+c.reported+" of "+c.total+"  ("+c.good+" all good, "+c.attn+" need attention, "+c.skip+" not covered)");
+  const fl=[];
+  if(c.attn) fl.push(c.attn+" need"+(c.attn>1?"":"s")+" attention");
+  if(c.skip) fl.push(c.skip+" not covered");
+  L.push(fl.length
+    ? "Flagged: "+fl.join(", ")+"   (the other "+(c.total-c.flagged)+" of "+c.total+" were walked and were fine)"
+    : "Nothing flagged \u2014 all "+c.total+" departments were walked and were fine.");
   L.push("");
 
   const tl=tasksFor(sid);
@@ -1086,15 +1170,15 @@ function buildReport(st,sid){
     });
     L.push("");
   }
-  [["concern","CONCERNS / WATCH ITEMS"],["product","PRODUCT & WASTE"],["staffing","STAFFING"],["win","WINS"]].forEach(([k,title])=>{
+  [["concern","CONCERNS / WATCH ITEMS"],["product","PRODUCT & WASTE"],["staffing","STAFFING"],["note","NOTES"],["win","WINS"]].forEach(([k,title])=>{
     if(!g[k].length) return;
     L.push(D); L.push(title+" ("+g[k].length+")"); L.push(D);
     g[k].forEach(r=> L.push("  ["+r.dept+"]"+(r.route?" ("+r.route+")":"")+" "+r.text));
     L.push("");
   });
   if(g.skipped.length){ L.push(D); L.push("NOT COVERED THIS SHIFT"); L.push(D); L.push("  "+g.skipped.join(", ")); L.push(""); }
-  if(!g.issues.length&&!g.concern.length&&!g.product.length&&!g.staffing.length&&!g.win.length)
-    L.push("No issues, concerns or notes recorded this shift.");
+  if(!g.issues.length&&!g.concern.length&&!g.product.length&&!g.staffing.length&&!g.note.length&&!g.win.length)
+    L.push("Nothing written down this shift.");
   return L.join("\n");
 }
 
@@ -1499,7 +1583,7 @@ function showHistory(){
     <div class="dept open" style="margin-bottom:9px">
       <button class="dept-head" data-h="${i}">
         <span class="nm">${esc(shortDate(e.date))}</span>
-        <span class="pill s-good">${esc(e.shift||"")}</span>
+        <span class="pill s-shift">${esc(e.shift||"")}</span>
         <span class="caret"></span>
       </button>
       <div class="dept-body hidden" style="padding:12px"><pre class="report">${esc(e.report)}</pre></div>
