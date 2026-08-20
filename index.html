@@ -232,6 +232,54 @@ pre.report{white-space:pre-wrap;word-wrap:break-word;font:11.5px/1.55 ui-monospa
 .t-Product{border-left-color:var(--clay)} .t-Product .tag{background:var(--clay-soft);color:var(--clay)}
 .t-Staffing{border-left-color:var(--plum)} .t-Staffing .tag{background:var(--plum-soft);color:var(--plum)}
 .t-Win{border-left-color:var(--green)} .t-Win .tag{background:var(--green-soft);color:var(--green)}
+
+/* ================= iPad and other big screens ================= */
+@media(min-width:900px){
+  .wrap{max-width:1120px;padding:0 20px}
+
+  /* departments sit two-up when closed; the open one takes the full width */
+  .block{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;align-items:start}
+  .block > h2{grid-column:1 / -1}
+  .dept.open{grid-column:1 / -1}
+
+  /* a bit more room to read and tap */
+  .dept-head{min-height:64px;padding:15px 17px}
+  .dept-head .nm{font-size:17px}
+  .dept-body{padding:15px 17px 17px}
+  .st{font-size:14px;min-height:50px}
+  .add{font-size:14px;min-height:44px;padding:9px 15px}
+  .entry textarea{min-height:84px;font-size:16px}
+  .guide ul{font-size:14.5px}
+  .prompts ul{font-size:14.5px}
+  .lbl,.namebar input{font-size:16px}
+  .sheet-in{max-width:900px}
+  .footbar button{font-size:15.5px;min-height:54px}
+}
+
+/* landscape iPad: the screen is short, so give the chrome less of it */
+@media(min-width:900px) and (max-height:900px){
+  .top-row{padding:7px 0;gap:10px}
+  .brand{font-size:14px}
+  .brand small{font-size:12px}
+  .progress-wrap{padding-bottom:7px}
+  .bar-label{margin-bottom:4px}
+  .tabbar{padding-bottom:7px}
+  .stab{min-height:38px;padding:7px 10px}
+  .footbar{padding:7px 0 max(7px,env(safe-area-inset-bottom))}
+  .footbar button{min-height:46px;padding:11px 10px}
+  .block{margin-top:16px}
+}
+
+/* while the on-screen keyboard is up, get the fixed bar out of the way */
+body.typing .footbar{display:none}
+
+/* compact the "who's on" bar on big screens — it's one short name */
+@media(min-width:900px){
+  .namebar{display:flex;align-items:center;gap:14px;padding:11px 17px;margin-top:14px}
+  .namebar label{margin:0;flex-shrink:0;font-size:12.5px}
+  .namebar input{flex:1;min-height:42px;padding:10px 13px}
+  .sentmark{margin-top:0;flex-shrink:0}
+}
 </style>
 </head>
 <body>
@@ -1258,6 +1306,17 @@ setInterval(()=>{
   flushOutbox(true);
 }, 60000);
 window.addEventListener("online", ()=>flushOutbox(true));
+
+/* the iPad keyboard covers the bottom of the screen — hide the fixed bar while typing */
+document.addEventListener("focusin", e=>{
+  if(e.target.matches("textarea,input")) document.body.classList.add("typing");
+});
+document.addEventListener("focusout", e=>{
+  if(e.target.matches("textarea,input")) setTimeout(()=>{
+    const a=document.activeElement;
+    if(!a || !a.matches("textarea,input")) document.body.classList.remove("typing");
+  },80);
+});
 </script>
 </body>
 </html>
