@@ -16,7 +16,7 @@ var LOOKBACK_DAYS   = 3;               // how far back managers can read on thei
 /* ====================================== */
 
 var SHIFTS_SHEET   = "Shifts";
-var BULLETIN_SHEET = "Bulletin";
+var BULLETIN_SHEET = "Vista Updates";
 var ENTRIES_SHEET = "Entries";
 var ARCHIVE_SUFFIX = " (archive)";
 
@@ -26,7 +26,7 @@ var SHIFT_COLS = ["Received","Date","Store","Shift","Manager","Day type",
 var ENTRY_COLS = ["Received","Date","Store","Shift","Manager","Time block",
                   "Department","Dept status","Type","Route to","Detail"];
 
-/* The Bulletin tab is where main office types announcements for managers.
+/* The "Vista Updates" tab is where main office types announcements for managers.
    Store   — leave blank for every store, or type one store's name
    Starts / Ends — leave blank for "show it now, until I turn it off"
    Active  — leave blank or type TRUE to show it; FALSE hides it          */
