@@ -115,6 +115,14 @@ header{border-bottom:1px solid var(--grid);background:var(--surface);position:st
 .t-Staffing{border-left-color:var(--t-staffing)} .t-Staffing .tag{background:var(--t-staffing-bg);color:var(--t-staffing)}
 .t-Win{border-left-color:var(--t-win)} .t-Win .tag{background:var(--t-win-bg);color:var(--t-win)}
 .t-Note{border-left-color:var(--t-note)} .t-Note .tag{background:var(--t-note-bg);color:var(--t-note)}
+.handled{display:inline-flex;align-items:center;gap:8px;margin-top:9px;cursor:pointer;
+  font-size:12.5px;color:var(--muted);user-select:none}
+.handled input{appearance:none;-webkit-appearance:none;width:18px;height:18px;flex-shrink:0;margin:0;
+  border:2px solid var(--grid);border-radius:5px;background:var(--surface);position:relative;cursor:pointer}
+.handled input:checked{background:var(--good);border-color:var(--good)}
+.handled input:checked::after{content:"";position:absolute;left:5px;top:1px;width:4px;height:9px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.handled.on{color:var(--good)}
 .shrow{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 12px}
 .sh{font-size:12.5px;border-radius:999px;padding:6px 11px;border:1px solid var(--grid);color:var(--ink-2);white-space:nowrap}
 .sh b{color:var(--ink);font-weight:700;margin-right:5px}
@@ -165,7 +173,7 @@ details.full summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(-
         <select id="f-route"><option value="">Anyone</option></select>
         <select id="f-dept"><option value="">All departments</option></select>
         <select id="f-shift"><option value="">All shifts</option></select>
-        <select id="f-days"><option value="15">Last 15 days</option><option value="7">Last 7 days</option><option value="3">Last 3 days</option><option value="1">Today</option></select>
+        <select id="f-days"><option value="15">Last 15 days</option><option value="7">Last 7 days</option><option value="3">Last 3 days</option><option value="1">Today</option><option value="all">Everything on record</option></select>
         <input type="search" id="f-q" placeholder="Search words…">
       </div>
     </div>
@@ -233,7 +241,8 @@ function fetchData(pass, cb){
     google.script.run.withSuccessHandler(cb).withFailureHandler(function(e){cb({ok:false,error:String(e&&e.message||e)})}).getData(pass);
     return;
   }
-  var url=(window.API_URL||"")+"?action=data&pass="+encodeURIComponent(pass);
+  var all = $("#f-days") && $("#f-days").value==="all" ? "&all=1" : "";
+  var url=(window.API_URL||"")+"?action=data&pass="+encodeURIComponent(pass)+all;
   fetch(url).then(function(r){return r.json()}).then(cb).catch(function(e){cb({ok:false,error:String(e)})});
 }
 
@@ -268,6 +277,17 @@ function initFilters(){
   $$(".filters select, .filters input").forEach(function(el){
     el.addEventListener("change", render); el.addEventListener("input", render);
   });
+  /* "Everything on record" has to go back and fetch the archive tabs */
+  var lastAll = false;
+  $("#f-days").addEventListener("change", function(){
+    var wantAll = $("#f-days").value === "all";
+    if(wantAll === lastAll) return;
+    lastAll = wantAll;
+    $("#sub").textContent = wantAll ? "loading everything on record…" : "loading…";
+    fetchData(PASS, function(res){
+      if(res && res.ok){ DATA = res; render(); }
+    });
+  });
   $$(".tab").forEach(function(t){ t.addEventListener("click", function(){
     TAB=t.dataset.tab;
     $$(".tab").forEach(function(x){x.classList.toggle("on",x===t)});
@@ -283,7 +303,9 @@ function uniq(a){ var s={}, o=[]; a.forEach(function(v){ if(v && !s[v]){s[v]=1;o
 
 function filters(){
   return { store:$("#f-store").value, type:$("#f-type").value, route:$("#f-route").value, dept:$("#f-dept").value,
-           shift:$("#f-shift").value, days:+$("#f-days").value||15, q:$("#f-q").value.trim().toLowerCase() };
+           shift:$("#f-shift").value,
+           days:$("#f-days").value==="all" ? 99999 : (+$("#f-days").value||15),
+           q:$("#f-q").value.trim().toLowerCase() };
 }
 function entries(){
   var f=filters();
@@ -319,7 +341,7 @@ function render(){
   renderBars(es);
   renderStoreBars(es);
   renderRepeats(es);
-  if(TAB==="feed") renderFeed(es);
+  if(TAB==="feed"){ renderFeed(es); wireHandled(); }
   if(TAB==="coverage") renderCoverage(ss);
   if(TAB==="reports") renderReports(ss);
 }
@@ -361,6 +383,9 @@ function renderStoreBars(es){
   }).join("");
 }
 
+function openCount(es){
+  return es.filter(function(e){ return String(e["Route to"]||"").trim() && !e.Handled }).length;
+}
 function renderKpis(es,ss){
   var issues=es.filter(function(e){return e.Type==="Issue"}).length;
   var wins=es.filter(function(e){return e.Type==="Win"}).length;
@@ -369,6 +394,7 @@ function renderKpis(es,ss){
   var days={}; ss.forEach(function(s){ days[(s.Date||"")+"||"+(s.Store||"")]=1; });
   var dayCount=Object.keys(days).length;
   $("#kpis").innerHTML =
+    tile(openCount(es), "Still open", openCount(es)? "Routed and not yet handled":"Everything routed has been handled", openCount(es)>0) +
     tile(issues, "Issues raised", byRoute(es), issues>0) +
     tile(es.length, "Notes in total", wins+" of them wins", false) +
     tile(attn, "Departments flagged", attn? "Marked needs attention":"Nothing flagged", attn>0) +
@@ -428,9 +454,33 @@ function renderFeed(es){
         '<span class="dept">'+esc(e.Department)+'</span>'+
         (e["Route to"]?'<span class="route">→ '+esc(e["Route to"])+'</span>':'')+
         '<span class="meta">'+(e.Store?esc(e.Store)+' · ':'')+esc(e.Shift)+(e.Manager?' · '+esc(e.Manager):'')+'</span></div>'+
-        '<p>'+esc(e.Detail)+'</p></div>';
+        '<p>'+esc(e.Detail)+'</p>'+
+        (e["Route to"] && e["Entry ID"]
+          ? '<label class="handled'+(e.Handled?' on':'')+'">'+
+              '<input type="checkbox" data-handled="'+esc(e["Entry ID"])+'"'+(e.Handled?' checked':'')+'>'+
+              '<span>'+(e.Handled ? 'Handled '+esc(e["Handled at"]||'') : 'Mark handled')+'</span></label>'
+          : '')+
+        '</div>';
     }).join("")+'</div>';
   }).join("");
+}
+
+function wireHandled(){
+  $$('#feed input[data-handled]').forEach(function(b){
+    b.addEventListener('change', function(){
+      var id=b.dataset.handled, on=b.checked;
+      var lab=b.closest('.handled'); lab.classList.toggle('on', on);
+      lab.querySelector('span').textContent = on ? 'Handled — saving…' : 'Mark handled';
+      var url=(window.API_URL||"")+"?action=handle&pass="+encodeURIComponent(PASS)+
+              "&ids="+encodeURIComponent(id)+"&on="+(on?1:0);
+      fetch(url).then(function(r){return r.json()}).then(function(j){
+        if(!j.ok){ b.checked=!on; lab.classList.toggle('on',!on); lab.querySelector('span').textContent='Could not save'; return; }
+        lab.querySelector('span').textContent = on ? 'Handled just now' : 'Mark handled';
+        DATA.entries.forEach(function(e){ if(e["Entry ID"]===id){ e.Handled = on?"Yes":""; } });
+        renderKpis(entries(), shifts());
+      }).catch(function(){ b.checked=!on; lab.classList.toggle('on',!on); lab.querySelector('span').textContent='No connection'; });
+    });
+  });
 }
 
 function renderCoverage(ss){
