@@ -19,6 +19,7 @@
   --t-product:#7a4a12; --t-product-bg:#f6eede;
   --t-staffing:#6b4a7a;--t-staffing-bg:#f2ecf5;
   --t-win:#1f6b45;     --t-win-bg:#e8f2ec;
+  --t-note:#45525c;    --t-note-bg:#eceff1;
   --radius:14px;
 }
 @media (prefers-color-scheme:dark){
@@ -35,6 +36,7 @@
     --t-product:#d9b478; --t-product-bg:#33270f;
     --t-staffing:#c5aad2;--t-staffing-bg:#2b2233;
     --t-win:#7cc79f;     --t-win-bg:#152c21;
+    --t-note:#b3bfc8;    --t-note-bg:#252b30;
   }
 }
 *{box-sizing:border-box}
@@ -112,6 +114,13 @@ header{border-bottom:1px solid var(--grid);background:var(--surface);position:st
 .t-Product{border-left-color:var(--t-product)} .t-Product .tag{background:var(--t-product-bg);color:var(--t-product)}
 .t-Staffing{border-left-color:var(--t-staffing)} .t-Staffing .tag{background:var(--t-staffing-bg);color:var(--t-staffing)}
 .t-Win{border-left-color:var(--t-win)} .t-Win .tag{background:var(--t-win-bg);color:var(--t-win)}
+.t-Note{border-left-color:var(--t-note)} .t-Note .tag{background:var(--t-note-bg);color:var(--t-note)}
+.shrow{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 12px}
+.sh{font-size:12.5px;border-radius:999px;padding:6px 11px;border:1px solid var(--grid);color:var(--ink-2);white-space:nowrap}
+.sh b{color:var(--ink);font-weight:700;margin-right:5px}
+.sh.missing{background:var(--t-issue-bg);color:var(--t-issue);border-color:transparent}
+.sh.missing b{color:var(--t-issue)}
+.copy{margin-top:10px;border:1px solid var(--grid);background:var(--surface);color:var(--ink-2);border-radius:9px;padding:8px 13px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 
 /* coverage table */
 table{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -192,7 +201,7 @@ details.full summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(-
     <div class="tabs">
       <button class="tab on" data-tab="feed">What managers reported</button>
       <button class="tab" data-tab="coverage">Shift coverage</button>
-      <button class="tab" data-tab="reports">Full shift reports</button>
+      <button class="tab" data-tab="reports">Full daily report</button>
     </div>
 
     <div id="feed"></div>
@@ -203,8 +212,11 @@ details.full summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(-
 
 <script>
 var DATA={shifts:[],entries:[]}, PASS="", TAB="feed";
-var TYPES=["Issue","Concern","Product & waste","Staffing","Win"];
+var TYPES=["Note","Issue","Concern","Product & waste","Staffing","Win"];
 var ROUTES=["Higher Management","HR","Commissary","Maintenance"];
+var SHIFT_ORDER=["Opening Manager","2nd Shift Manager","Closing Manager"];
+function shiftRank(n){var i=SHIFT_ORDER.indexOf(n);return i<0?99:i}
+function shortShift(n){return String(n||"").replace(/ Manager$/,"")}
 var SEQ=["--seq-1","--seq-2","--seq-3","--seq-4","--seq-5"];
 
 function $(s){return document.querySelector(s)}
@@ -353,14 +365,14 @@ function renderKpis(es,ss){
   var issues=es.filter(function(e){return e.Type==="Issue"}).length;
   var wins=es.filter(function(e){return e.Type==="Win"}).length;
   var notCovered=ss.reduce(function(a,s){return a+(+s["Not covered"]||0)},0);
-  var logged=ss.reduce(function(a,s){return a+(+s.Logged||0)},0);
-  var total=ss.reduce(function(a,s){return a+(+s.Departments||0)},0);
-  var pct= total? Math.round(logged/total*100) : 0;
+  var attn=ss.reduce(function(a,s){return a+(+s["Needs attention"]||0)},0);
+  var days={}; ss.forEach(function(s){ days[(s.Date||"")+"||"+(s.Store||"")]=1; });
+  var dayCount=Object.keys(days).length;
   $("#kpis").innerHTML =
     tile(issues, "Issues raised", byRoute(es), issues>0) +
     tile(es.length, "Notes in total", wins+" of them wins", false) +
-    tile(pct+"%", "Departments logged", logged+" of "+total+" across "+ss.length+" shift"+(ss.length===1?"":"s"), false) +
-    tile(notCovered, "Departments skipped", notCovered? "Someone didn't get to these":"Nothing skipped", notCovered>0);
+    tile(attn, "Departments flagged", attn? "Marked needs attention":"Nothing flagged", attn>0) +
+    tile(notCovered, "Not covered", notCovered? "A manager said they didn't get to these":"Every department was walked", notCovered>0);
 }
 function tile(v,label,sub,alert){
   return '<div class="kpi'+(alert?" alert":"")+'"><b>'+esc(v)+'</b><span>'+esc(label)+'</span>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</div>';
@@ -424,24 +436,91 @@ function renderFeed(es){
 function renderCoverage(ss){
   if(!ss.length){ $("#coverage").innerHTML='<p class="empty">No shifts submitted in this window.</p>'; return; }
   $("#coverage").innerHTML='<div class="card"><table><thead><tr>'+
-    '<th>Day</th><th>Store</th><th>Shift</th><th>Manager</th><th>Logged</th><th>All good</th><th>Attention</th><th>Skipped</th><th>Issues</th></tr></thead><tbody>'+
+    '<th>Day</th><th>Store</th><th>Shift</th><th>Manager</th><th>Departments</th><th>Attention</th><th>Not covered</th><th>Issues</th><th>Notes</th></tr></thead><tbody>'+
     ss.map(function(s){
-      var logged=+s.Logged||0, tot=+s.Departments||0, skip=+s["Not covered"]||0;
-      var cls = skip? "d-bad" : (logged>=tot? "d-good":"d-warn");
+      var tot=+s.Departments||0, skip=+s["Not covered"]||0, attn=+s["Needs attention"]||0;
+      var cls = skip? "d-bad" : (attn? "d-warn":"d-good");
       return '<tr><td>'+esc(prettyDay(s.Date))+'</td><td>'+esc(s.Store||"—")+'</td><td>'+esc(s.Shift)+'</td><td>'+esc(s.Manager||"—")+'</td>'+
-        '<td class="num"><span class="dot '+cls+'"></span>'+logged+' / '+tot+'</td>'+
-        '<td class="num">'+(+s["All good"]||0)+'</td><td class="num">'+(+s["Needs attention"]||0)+'</td>'+
-        '<td class="num'+(skip?' miss':'')+'">'+skip+'</td><td class="num">'+(+s.Issues||0)+'</td></tr>';
+        '<td class="num"><span class="dot '+cls+'"></span>'+tot+'</td>'+
+        '<td class="num">'+attn+'</td>'+
+        '<td class="num'+(skip?' miss':'')+'">'+skip+'</td><td class="num">'+(+s.Issues||0)+'</td>'+
+        '<td class="num">'+(+s.Notes||0)+'</td></tr>';
     }).join("")+'</tbody></table></div>';
 }
 
 function renderReports(ss){
   if(!ss.length){ $("#reports").innerHTML='<p class="empty">No shifts submitted in this window.</p>'; return; }
-  $("#reports").innerHTML = ss.map(function(s){
-    return '<div class="card"><h2>'+esc(prettyDay(s.Date))+' — '+(s.Store?esc(s.Store)+' — ':'')+esc(s.Shift)+'</h2>'+
-      '<p class="cap">'+esc(s.Manager||"No name")+(s["Day type"]?' · '+esc(s["Day type"]):'')+' · received '+esc(s.Received)+'</p>'+
-      '<details class="full"><summary>Show the full report</summary><pre class="rep">'+esc(s["Full report"])+'</pre></details></div>';
+
+  /* one card per store per day, with all three shifts stitched together */
+  var groups={}, order=[];
+  ss.forEach(function(r){
+    var k=(r.Date||"")+"||"+(r.Store||"");
+    if(!groups[k]){ groups[k]={date:r.Date, store:r.Store||"", rows:[]}; order.push(k); }
+    groups[k].rows.push(r);
+  });
+  order.sort(function(a,b){
+    var A=groups[a], B=groups[b];
+    if(A.date!==B.date) return A.date<B.date?1:-1;      // newest day first
+    return A.store<B.store?-1:(A.store>B.store?1:0);
+  });
+
+  var newest=groups[order[0]].date;
+
+  $("#reports").innerHTML = order.map(function(k,gi){
+    var g=groups[k];
+    g.rows.sort(function(a,b){ return shiftRank(a.Shift)-shiftRank(b.Shift); });
+
+    var sum={depts:0, attn:0, skip:0, issues:0, notes:0};
+    g.rows.forEach(function(r){
+      sum.depts  = Math.max(sum.depts, +r.Departments||0);
+      sum.attn  += (+r["Needs attention"]||0);
+      sum.skip  += (+r["Not covered"]||0);
+      sum.issues+= (+r.Issues||0);
+      sum.notes += (+r.Notes||0);
+    });
+
+    var seen={}; g.rows.forEach(function(r){ seen[r.Shift]=r; });
+    var chips = SHIFT_ORDER.map(function(name){
+      var r=seen[name];
+      return r
+        ? '<span class="sh ok"><b>'+esc(shortShift(name))+'</b> '+esc(r.Manager||"no name")+'</span>'
+        : '<span class="sh missing"><b>'+esc(shortShift(name))+'</b> not received</span>';
+    }).join("");
+
+    var stats=[];
+    if(sum.attn)   stats.push(sum.attn+" needed attention");
+    if(sum.skip)   stats.push(sum.skip+" not covered");
+    if(sum.issues) stats.push(sum.issues+" issue"+(sum.issues>1?"s":""));
+    if(sum.notes)  stats.push(sum.notes+" note"+(sum.notes>1?"s":""));
+    if(!stats.length) stats.push("nothing flagged all day");
+
+    var dayType = (g.rows[0]||{})["Day type"]||"";
+    var full = g.rows.map(function(r){
+      return "==============================================\n"+
+             String(r.Shift||"").toUpperCase()+"  —  "+(r.Manager||"no name")+"\n"+
+             "==============================================\n\n"+
+             (r["Full report"]||"(empty)");
+    }).join("\n\n\n");
+
+    return '<div class="card day">'+
+      '<h2>'+esc(prettyDay(g.date))+(g.store?' — '+esc(g.store):'')+'</h2>'+
+      '<p class="cap">'+(dayType?esc(dayType)+' · ':'')+esc(sum.depts)+' departments · '+esc(stats.join(" · "))+'</p>'+
+      '<div class="shrow">'+chips+'</div>'+
+      '<details class="full"'+(g.date===newest?' open':'')+'>'+
+        '<summary>The whole day, all shifts together</summary>'+
+        '<pre class="rep" id="rep'+gi+'">'+esc(full)+'</pre>'+
+        '<button class="copy" data-copy="rep'+gi+'">Copy the whole day</button>'+
+      '</details></div>';
   }).join("");
+
+  $$("#reports .copy").forEach(function(b){
+    b.addEventListener("click", function(){
+      var t=document.getElementById(b.dataset.copy);
+      navigator.clipboard.writeText(t.textContent).then(function(){
+        var was=b.textContent; b.textContent="Copied"; setTimeout(function(){b.textContent=was},1400);
+      });
+    });
+  });
 }
 
 /* ---------- csv ---------- */
