@@ -328,6 +328,45 @@ body.typing .footbar{display:none}
 /* the full text, opened from the strip */
 .bult{border-left-color:#b3271d}
 .bult-tag{color:#b3271d}
+
+/* ================= per-shift colour ================= */
+:root{ --accent:#1f6b45; --accent-soft:#e8f2ec }
+
+/* tabs each carry their own colour */
+.stab{border-color:color-mix(in srgb, var(--c, var(--accent)) 28%, var(--line));
+      color:color-mix(in srgb, var(--c, var(--accent)) 72%, var(--ink-2));
+      background:var(--card)}
+.stab.on{background:var(--c, var(--accent));border-color:var(--c, var(--accent));color:#fff}
+.stab.on .tmark{color:#fff}
+.stab .tdot{background:var(--c, var(--accent))}
+.stab.on .tdot{background:#fff}
+
+/* the current shift's colour runs through the page */
+.block > h2{color:var(--accent)}
+.bar > i{background:var(--accent)}
+.footbar button.go{background:var(--accent);border-color:var(--accent)}
+.primary{background:var(--accent)}
+.sheet-foot button.go{background:var(--accent);border-color:var(--accent)}
+.dept.has-status{border-left:3px solid color-mix(in srgb, var(--accent) 35%, var(--line))}
+.namebar{border-left:3px solid var(--accent)}
+.namebar label{color:var(--accent)}
+.entry textarea:focus,.field input[type=text]:focus,.namebar input:focus{outline-color:var(--accent)}
+.sheet-foot button.go.danger{background:var(--red);border-color:var(--red)}
+.primary.ghost{background:var(--card)}
+.primary.ghost.danger{background:var(--card)}
+
+/* section headers get a coloured rule, not just text */
+.block > h2::after{background:color-mix(in srgb, var(--accent) 22%, var(--line))}
+
+/* the confirmation tick on the closing shift */
+.confirmbox{display:flex;gap:12px;align-items:flex-start;margin:14px 0 4px;padding:13px 14px;
+  border:1.5px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font-size:15px;line-height:1.4}
+.confirmbox.on{border-color:var(--accent);background:var(--accent-soft)}
+.confirmbox input{appearance:none;width:26px;height:26px;border:2px solid #c9c6bd;border-radius:7px;
+  flex-shrink:0;margin:0;background:#fff;position:relative}
+.confirmbox input:checked{background:var(--accent);border-color:var(--accent)}
+.confirmbox input:checked::after{content:"";position:absolute;left:8px;top:3px;width:6px;height:12px;
+  border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(43deg)}
 </style>
 </head>
 <body>
@@ -517,7 +556,7 @@ const CONFIG = {
 
 /* ================= constants ================= */
 const KEY="mgr-v4", HKEY="mgr-history-v4", OKEY="mgr-outbox-v4", CKEY="mgr-config-v4",
-      SKEY="mgr-store-v4", CODEKEY="mgr-code-v4", BKEY="mgr-bulletin-v4";
+      SKEY="mgr-store-v4", CODEKEY="mgr-code-v4", BKEY="mgr-bulletin-v4", TKEY="mgr-tasks-v4";
 const RETAIN_DAYS = 15;
 const LOOKBACK_DAYS = 3;
 const ROUTES = ["Higher Management","HR","Commissary","Maintenance"];
@@ -536,7 +575,11 @@ const STATUS = {
 };
 const RECENT = "recent";
 const NEWS_NAME = "Vista Updates";
-const NEWS_MS = 3000;   // how long each update sits on screen before the next one
+const NEWS_MS = 3000;
+/* each shift carries its own colour, so it's obvious whose tab you're in */
+const SHIFT_COLOR = { opening:"#1f6b45", second:"#1f5f8b", closing:"#4b3f9e" };
+const SHIFT_TINT  = { opening:"#e8f2ec", second:"#e7eff6", closing:"#ecebf8" };
+const RECENT_COLOR="#55606b", RECENT_TINT="#eef0f2";   // how long each update sits on screen before the next one
 
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
@@ -598,7 +641,7 @@ function defaultShift(){ return SHIFT_IDS[0]; }   // always start on Opening
 function blank(){
   return { v:4, date:todayKey(), store:STORE?STORE.name:"", storeId:STORE?STORE.id:"",
            day:{order:false,delivery:false,tue:new Date().getDay()===2},
-           shift:defaultShift(), managers:{}, sent:{}, depts:{}, seq:1, open:{}, started:false };
+           shift:defaultShift(), managers:{}, sent:{}, depts:{}, tasks:{}, seq:1, open:{}, started:false };
 }
 let S = blank();
 
@@ -628,7 +671,7 @@ function load(){
   if(!saved || saved.v!==4) return;
   if(saved.date !== todayKey()){ archiveAll(saved); S=blank(); save(); return; }
   S=saved;
-  S.open=S.open||{}; S.managers=S.managers||{}; S.sent=S.sent||{};
+  S.open=S.open||{}; S.managers=S.managers||{}; S.sent=S.sent||{}; S.tasks=S.tasks||{};
   if(STORE && S.storeId && S.storeId!==STORE.id){ archiveAll(S); S=blank(); save(); return; }
   if(STORE){ S.store=STORE.name; S.storeId=STORE.id; }
   if(SHIFT_IDS.indexOf(S.shift)<0 && S.shift!==RECENT) S.shift=defaultShift();
@@ -716,13 +759,21 @@ function renderSetup(){
   $("#start").addEventListener("click",()=>{
     if(!STORE){ toast("Pick your store first"); return; }
     if($("#code")) setCode($("#code").value);
-    S.started=true; save(); renderMain(); loadBulletins();
+    S.started=true; save(); renderMain(); loadBulletins(); loadTasks();
   });
   if($("#pastbtn")) $("#pastbtn").addEventListener("click", showHistory);
 }
 
 /* ================= main view ================= */
+function applyAccent(){
+  const c = S.shift===RECENT ? RECENT_COLOR : (SHIFT_COLOR[S.shift]||"#1f6b45");
+  const t = S.shift===RECENT ? RECENT_TINT  : (SHIFT_TINT[S.shift] ||"#e8f2ec");
+  document.documentElement.style.setProperty("--accent", c);
+  document.documentElement.style.setProperty("--accent-soft", t);
+}
+
 function renderMain(){
+  applyAccent();
   $("#topbar").classList.remove("hidden");
   $("#footbar").classList.remove("hidden");
   renderTabs();
@@ -735,10 +786,13 @@ function renderTabs(){
   $("#tabs").innerHTML = SHIFT_IDS.map(id=>{
     const def=shiftDef(id);
     const state = S.sent[id] ? "sent" : (hasContent(S,id) ? "wip" : "");
-    return `<button class="stab${S.shift===id?" on":""}${state?" "+state:""}" data-tab="${id}">
+    const c=SHIFT_COLOR[id]||"#1f6b45", t=SHIFT_TINT[id]||"#e8f2ec";
+    return `<button class="stab${S.shift===id?" on":""}${state?" "+state:""}" data-tab="${id}"
+        style="--c:${c};--t:${t}">
       <span class="tlabel">${esc(def.name)}</span>${state==="sent"?'<span class="tmark">✓</span>':(state==="wip"?'<span class="tdot"></span>':"")}
     </button>`;
-  }).join("") + `<button class="stab${S.shift===RECENT?" on":""}" data-tab="${RECENT}"><span class="tlabel">Prev Reports (${LOOKBACK_DAYS} days)</span></button>`;
+  }).join("") + `<button class="stab${S.shift===RECENT?" on":""}" data-tab="${RECENT}"
+      style="--c:${RECENT_COLOR};--t:${RECENT_TINT}"><span class="tlabel">Prev Reports (${LOOKBACK_DAYS} days)</span></button>`;
 
   $$("#tabs .stab").forEach(b=> b.addEventListener("click",()=>{
     if(S.shift===b.dataset.tab) return;
@@ -750,12 +804,14 @@ function renderTabs(){
 
 function renderShift(){
   const def=shiftDef(S.shift);
+  const isLast = S.shift===SHIFT_IDS[SHIFT_IDS.length-1];
   let html='<div class="wrap">';
   html += `<div class="namebar">
     <label for="mgrname">${esc(def.name)} — who's on?</label>
     <input type="text" id="mgrname" placeholder="Your name" autocomplete="name" value="${esc(S.managers[S.shift]||"")}">
     ${S.sent[S.shift]?`<span class="sentmark">Sent ${new Date(S.sent[S.shift]).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</span>`:""}
   </div>`;
+  html += tasksHTML(S.shift);
 
   def.blocks.forEach((b,bi)=>{
     html += `<section class="block"><h2>${esc(b.time)}</h2>`;
@@ -764,11 +820,12 @@ function renderShift(){
   });
 
   html += `<div class="endcard">
-    <h3>Finishing up</h3>
-    <p>Send this shift when you're done walking. Anyone can send more than once — the newest one replaces the last.</p>
-    <button class="primary" id="endsend">Review &amp; send ${esc(def.short.toLowerCase())}</button>
-    <button class="primary ghost danger" id="closeday">Close out the day</button>
-    <p class="hint">Closing out sends anything still waiting, files the day away, and clears the screen for tomorrow. Usually the last thing the closing manager does.</p>
+    <h3>${isLast?"Closing the store":"Finishing up"}</h3>
+    <p>${isLast?"Last thing before you lock up.":"Send this shift when you're done walking."}</p>
+    <button class="primary" id="endsend">${isLast?"Review &amp; close the day":"Review &amp; send "+esc(def.short.toLowerCase())}</button>
+    <p class="hint">${isLast
+      ? "Closing the day checks every shift is finished, sends them all to the office, files the day away and clears the screen for tomorrow."
+      : "Send as often as you like — the newest one replaces the last."}</p>
   </div>`;
 
   html += '</div>';
@@ -776,7 +833,6 @@ function renderShift(){
 
   $("#mgrname").addEventListener("input",e=>{ S.managers[S.shift]=e.target.value; save(); });
   $("#endsend").addEventListener("click", showSummary);
-  $("#closeday").addEventListener("click", askCloseDay);
 }
 
 function deptHTML(d,bi,di){
@@ -880,6 +936,21 @@ function wireApp(){
   });
   app.addEventListener("change", e=>{
     const el=e.target;
+    if(el.dataset.task!=null){
+      const k=taskKey(S.shift, el.dataset.task);
+      S.tasks=S.tasks||{};
+      if(el.checked) S.tasks[k]={at:new Date().toISOString(), by:(S.managers||{})[S.shift]||""};
+      else delete S.tasks[k];
+      save();
+      const lab=el.closest(".task"); if(lab) lab.classList.toggle("on", el.checked);
+      const box=el.closest(".tasks");
+      if(box){
+        const list=tasksFor(S.shift), d=list.filter(t=>taskDone(S.shift,t.id)).length;
+        $(".tasks-head b",box).textContent = d+" of "+list.length+" done";
+        box.classList.toggle("all", d===list.length);
+      }
+      return;
+    }
     if(el.dataset.route!=null){
       const [id,i]=el.dataset.route.split(":");
       const en=(drec(id).e||[]).find(x=>String(x.i)===i);
@@ -935,6 +1006,8 @@ function refresh(){
 
   renderTabs();
   const sb=$("#submitbtn"); if(sb) sb.textContent = S.sent[S.shift] ? "Send update" : "Send to office";
+  const fb=$("#summarybtn");
+  if(fb) fb.textContent = S.shift===SHIFT_IDS[SHIFT_IDS.length-1] ? "Review & close the day" : "Review & send";
 }
 
 /* ================= report ================= */
@@ -968,6 +1041,14 @@ function buildReport(st,sid){
   if(dt.length) L.push("Day type: "+dt.join(", "));
   L.push("Departments logged: "+c.reported+" of "+c.total+"  ("+c.good+" all good, "+c.attn+" need attention, "+c.skip+" not covered)");
   L.push("");
+
+  const tl=tasksFor(sid);
+  if(tl.length){
+    const dn=tl.filter(t=>taskDone(sid,t.id)).length;
+    L.push(D); L.push("PRIORITY TASKS ("+dn+" of "+tl.length+" done)"); L.push(D);
+    tl.forEach(t=> L.push("  ["+(taskDone(sid,t.id)?"DONE":"NOT DONE")+"] "+t.task));
+    L.push("");
+  }
 
   if(g.issues.length){
     L.push(D); L.push("ISSUES ("+g.issues.length+")"); L.push(D);
@@ -1011,6 +1092,8 @@ function payload(st,sid){
     manager: (st.managers||{})[sid]||"",
     dayType: [st.day.order&&"Order day",st.day.delivery&&"Delivery day",st.day.tue&&"Price changes"].filter(Boolean).join(", "),
     counts:c,
+    tasks: tasksFor(sid).map(t=>({ id:t.id, task:t.task,
+      done: taskDone(sid,t.id), at: ((st.tasks||{})[taskKey(sid,t.id)]||{}).at || "" })),
     depts: deptList(st,sid).map(({d,id})=>({name:d.name, status:(st.depts[id]||{}).s||""})),
     entries,
     report: buildReport(st,sid)
@@ -1050,20 +1133,20 @@ function updateQueueChip(){
 
 async function sendShift(sid, quiet){
   const p=payload(S,sid);
-  if(!CFG.endpoint){ if(!quiet) askEndpoint(); return false; }
-  if(!CODE){ if(!quiet) askCode(); return false; }
+  if(!CFG.endpoint){ if(!quiet) askEndpoint(); return "noendpoint"; }
+  if(!CODE){ if(!quiet) askCode(); return "nocode"; }
   try{
     await postOnce(p);
     S.sent[sid]=new Date().toISOString(); save();
-    return true;
+    return "ok";
   }catch(err){
-    if(err.fatal){ setCode(""); if(!quiet) askCode("That store code wasn't accepted. Try again."); return false; }
+    if(err.fatal){ setCode(""); if(!quiet) askCode("That store code wasn't accepted. Try again."); return "badcode"; }
     const o=outbox().filter(x=>!(x.date===p.date && x.shiftId===p.shiftId && x.store===p.store));
     o.push(p); setOutbox(o);
     S.sent[sid]=new Date().toISOString(); save();
     updateQueueChip();
     if(!quiet) toast("No connection — saved and it will send itself later");
-    return true;
+    return "queued";
   }
 }
 
@@ -1083,8 +1166,47 @@ function askEndpoint(){
 }
 
 /* ================= store bulletin ================= */
-let BULLETINS = [];
+let BULLETINS = [], TASKS = [];
 try{ const b=JSON.parse(localStorage.getItem(BKEY)||"null"); if(b && Array.isArray(b.items)) BULLETINS=b.items; }catch(e){}
+try{ const t=JSON.parse(localStorage.getItem(TKEY)||"null"); if(t && Array.isArray(t.items)) TASKS=t.items; }catch(e){}
+
+async function loadTasks(){
+  if(!CFG.endpoint || !CODE || !STORE) return;
+  try{
+    const url = CFG.endpoint+"?action=tasks&code="+encodeURIComponent(CODE)+"&store="+encodeURIComponent(STORE.name);
+    const j = await (await fetch(url,{redirect:"follow"})).json();
+    if(!j.ok) return;
+    TASKS = j.tasks||[];
+    try{ localStorage.setItem(TKEY, JSON.stringify({at:Date.now(), items:TASKS})); }catch(e){}
+    if(S.shift!==RECENT) renderMain();
+  }catch(e){}
+}
+
+/* tasks for the shift being viewed — a blank Shift column means every shift */
+function tasksFor(sid){
+  const def=shiftDef(sid); if(!def) return [];
+  const nm=def.name.toLowerCase();
+  return TASKS.filter(t=>{
+    const w=(t.shift||"").trim().toLowerCase();
+    return !w || nm.indexOf(w)>=0 || w.indexOf(nm)>=0;
+  });
+}
+function taskKey(sid,id){ return sid+"|"+id; }
+function taskDone(sid,id){ return !!(S.tasks||{})[taskKey(sid,id)]; }
+
+function tasksHTML(sid){
+  const list=tasksFor(sid);
+  if(!list.length) return "";
+  const done=list.filter(t=>taskDone(sid,t.id)).length;
+  return `<div class="tasks${done===list.length?" all":""}">
+    <div class="tasks-head"><span>Priority tasks</span><b>${done} of ${list.length} done</b></div>
+    ${list.map(t=>`
+      <label class="task${taskDone(sid,t.id)?" on":""}" data-taskid="${esc(t.id)}">
+        <input type="checkbox" ${taskDone(sid,t.id)?"checked":""} data-task="${esc(t.id)}">
+        <span>${esc(t.task)}</span>
+      </label>`).join("")}
+  </div>`;
+}
 
 async function loadBulletins(){
   if(!CFG.endpoint || !CODE || !STORE) return;
@@ -1155,46 +1277,65 @@ function showSummary(){
     <pre class="report" id="reporttext">${esc(rep)}</pre>`,
     [{label:S.sent[sid]?"Send update":"Send to office", cls:"go", id:"submitbtn", fn:async()=>{
         if(!counts(S,sid).reported){ toast("Log at least one department first"); return; }
+        if(sid===SHIFT_IDS[SHIFT_IDS.length-1]){ confirmEndOfDay(); return; }   // closing shift gets a check first
         const b=$("#submitbtn"); b.disabled=true; b.textContent="Sending…";
-        const okd=await sendShift(sid);
+        const res=await sendShift(sid);
         b.disabled=false;
-        if(okd){ closeSheet(); toast("Sent to the office"); refresh(); } else { b.textContent="Send to office"; }
+        if(res==="ok"||res==="queued"){ closeSheet(); toast("Sent to the office"); refresh(); }
+        else { b.textContent="Send to office"; }
       }},
      {label:"Copy", fn:()=>copyText(rep)},
      {label:"Download", fn:()=>download(rep,sid)}]);
 }
 
-/* ================= close out the day ================= */
-function askCloseDay(){
-  const withContent=SHIFT_IDS.filter(id=>hasContent(S,id));
-  const unsent=withContent.filter(id=>!S.sent[id]);
+/* ================= end-of-day check, closing shift only ================= */
+function confirmEndOfDay(){
   const rows=SHIFT_IDS.map(id=>{
-    const def=shiftDef(id);
-    const state = !hasContent(S,id) ? "nothing logged" : (S.sent[id]? "sent" : "will be sent now");
-    return `<div class="repeat"><span class="dot ${!hasContent(S,id)?"d-none":(S.sent[id]?"d-good":"d-warn")}"></span>
-      <div><b>${esc(def.name)}</b><br><span style="color:var(--ink-2)">${esc(state)}</span></div></div>`;
+    const def=shiftDef(id), c=counts(S,id), has=hasContent(S,id);
+    const state = !has ? "nothing logged" : (S.sent[id] ? "sent" : "will be sent now");
+    const dot   = !has ? "d-none" : (S.sent[id] ? "d-good" : "d-warn");
+    return `<div class="repeat"><span class="dot ${dot}"></span>
+      <div><b>${esc(def.name)}</b> — ${esc((S.managers||{})[id]||"no name")}<br>
+      <span style="color:var(--ink-2)">${c.reported} of ${c.total} departments &middot; ${esc(state)}</span></div></div>`;
   }).join("");
+  const unsent=SHIFT_IDS.filter(id=>hasContent(S,id) && !S.sent[id]).length;
 
-  openSheet("Close out the day", `
-    <p style="margin-top:0">This files today away and clears the screen so tomorrow starts clean. You can still read today under <b>This phone's past days</b>.</p>
+  openSheet("Before the store closes", `
+    <p style="margin-top:0">Check that every manager on today has finished their walk. This sends
+    <b>every response, note and priority task</b> from all three shifts to the office, then clears the
+    screen for tomorrow.</p>
     ${rows}
-    ${unsent.length?`<p style="margin-top:14px"><b>${unsent.length} shift${unsent.length>1?"s":""}</b> will be sent to the office first.</p>`:""}
-    ${!withContent.length?`<p style="margin-top:14px">Nothing has been logged today, so there's nothing to send.</p>`:""}`,
-    [{label:"Close out the day", cls:"go danger", id:"cdbtn", fn:doCloseDay},
+    <label class="confirmbox" id="eodwrap">
+      <input type="checkbox" id="eodcheck">
+      <span>All managers on shift have completed their checklist.</span>
+    </label>
+    ${unsent?`<p class="hint">${unsent} shift${unsent>1?"s":""} will be sent now.</p>`
+            :`<p class="hint">Everything has already been sent — sending again replaces it with the latest.</p>`}`,
+    [{label:"Send &amp; close the day", cls:"go", id:"eodsend", fn:doEndOfDay},
      {label:"Not yet", fn:closeSheet}]);
+
+  const btn=$("#eodsend"); btn.disabled=true;
+  $("#eodcheck").addEventListener("change", e=>{
+    btn.disabled = !e.target.checked;
+    $("#eodwrap").classList.toggle("on", e.target.checked);
+  });
 }
 
-async function doCloseDay(){
-  const b=$("#cdbtn"); if(b){ b.disabled=true; b.textContent="Closing…"; }
-  for(const sid of SHIFT_IDS){
-    if(hasContent(S,sid) && !S.sent[sid]) await sendShift(sid, true);
+async function doEndOfDay(){
+  const btn=$("#eodsend"); btn.disabled=true; btn.textContent="Sending…";
+  let sent=0, problem=null;
+  for(const id of SHIFT_IDS){
+    if(!hasContent(S,id)) continue;
+    const res=await sendShift(id,true);
+    if(res==="ok"||res==="queued") sent++; else problem=res;
   }
-  archiveAll(S);
+  if(problem==="badcode"||problem==="nocode"){ closeSheet(); refresh(); askCode("That store code wasn't accepted, so nothing was sent. Check it and try again."); return; }
+  if(problem==="noendpoint"){ closeSheet(); refresh(); askEndpoint(); return; }
+
+  archiveAll(S);                       // file the day
   const st=STORE;
   S=blank(); S.store=st?st.name:""; S.storeId=st?st.id:"";
-  save();
-  closeSheet();
-  renderClosed();
+  save(); closeSheet(); renderClosed();
 }
 
 function renderClosed(){
@@ -1371,7 +1512,6 @@ function wireChrome(){
       ${n?`<button class="primary ghost" id="m-flush">Send ${n} waiting report${n>1?"s":""}</button>`:""}
       ${stores().length>1?`<button class="primary ghost" id="m-store">Change store (now ${esc(STORE?STORE.name:"none")})</button>`:""}
       <button class="primary ghost" id="m-settings">Store code &amp; office link</button>
-      <button class="primary ghost danger" id="m-close">Close out the day</button>
     </div>
     <p class="hint" style="margin-top:16px">Everything saves on this phone as you type. Days you close out are kept here for ${RETAIN_DAYS} days.</p>`,
     [{label:"Close", cls:"go", fn:closeSheet}]);
@@ -1391,7 +1531,6 @@ function wireChrome(){
         [{label:"Save", cls:"go", fn:()=>{ setCode($("#c3").value); CFG.endpoint=$("#ep3").value.trim(); saveCfg(); RECENT_CACHE=null; closeSheet(); toast("Saved"); }},
          {label:"Cancel", fn:closeSheet}]);
     });
-    $("#m-close").addEventListener("click",()=>{ closeSheet(); askCloseDay(); });
   });
 
   $("#newsstrip").addEventListener("click", showNews);
@@ -1411,12 +1550,13 @@ updateQueueChip();
 if(STORE && S.started) renderMain(); else renderSetup();
 flushOutbox(true);
 loadBulletins();
+loadTasks();
 
 setInterval(()=>{
   if(S.date!==todayKey()){ archiveAll(S); S=blank(); save(); renderSetup(); }
   flushOutbox(true);
 }, 60000);
-setInterval(loadBulletins, 30*60000);   // pick up a new bulletin without reopening the app
+setInterval(()=>{ loadBulletins(); loadTasks(); }, 30*60000);   // pick up a new bulletin without reopening the app
 window.addEventListener("online", ()=>flushOutbox(true));
 
 /* the iPad keyboard covers the bottom of the screen — hide the fixed bar while typing */
